@@ -6,11 +6,23 @@ export type ToolType = 'select' | 'rectangle' | 'arrow' | 'text' | 'step' | 'pen
 export interface ToolSettings {
   color: string;
   fillColor: string;
-  opacity: number;
+  strokeOpacity: number;
   fillOpacity: number;
   strokeWidth: number;
   strokeDashArray: number[] | null;
 }
+
+const hexToRgba = (hex: string, opacity: number) => {
+  if (!hex || hex === 'transparent') return 'transparent';
+  if (hex.startsWith('rgba')) {
+    return hex.replace(/[\d.]+\)$/g, `${opacity})`);
+  }
+  if (!hex.startsWith('#')) return hex;
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `rgba(${r}, ${g}, ${b}, ${opacity})`;
+};
 
 export const useFabric = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -18,23 +30,23 @@ export const useFabric = () => {
   
   const [activeTool, _setActiveTool] = useState<ToolType>('select');
   const [toolSettings, setToolSettings] = useState<Record<ToolType, ToolSettings>>({
-    select: { color: '#ff0000', fillColor: 'transparent', opacity: 1, fillOpacity: 0, strokeWidth: 4, strokeDashArray: null },
-    rectangle: { color: '#ff0000', fillColor: 'transparent', opacity: 1, fillOpacity: 0, strokeWidth: 4, strokeDashArray: null },
-    arrow: { color: '#ff0000', fillColor: '#ff0000', opacity: 1, fillOpacity: 1, strokeWidth: 4, strokeDashArray: null },
-    text: { color: '#ff0000', fillColor: '#ff0000', opacity: 1, fillOpacity: 1, strokeWidth: 0, strokeDashArray: null },
-    step: { color: '#ff0000', fillColor: '#ff0000', opacity: 1, fillOpacity: 1, strokeWidth: 0, strokeDashArray: null },
-    pen: { color: '#ff0000', fillColor: 'transparent', opacity: 1, fillOpacity: 0, strokeWidth: 4, strokeDashArray: null },
+    select: { color: '#ff0000', fillColor: 'transparent', strokeOpacity: 1, fillOpacity: 0, strokeWidth: 4, strokeDashArray: null },
+    rectangle: { color: '#ff0000', fillColor: 'transparent', strokeOpacity: 1, fillOpacity: 0, strokeWidth: 4, strokeDashArray: null },
+    arrow: { color: '#ff0000', fillColor: '#ff0000', strokeOpacity: 1, fillOpacity: 1, strokeWidth: 4, strokeDashArray: null },
+    text: { color: '#ff0000', fillColor: '#ff0000', strokeOpacity: 1, fillOpacity: 1, strokeWidth: 0, strokeDashArray: null },
+    step: { color: '#ff0000', fillColor: '#ff0000', strokeOpacity: 1, fillOpacity: 1, strokeWidth: 0, strokeDashArray: null },
+    pen: { color: '#ff0000', fillColor: 'transparent', strokeOpacity: 1, fillOpacity: 0, strokeWidth: 4, strokeDashArray: null },
   });
 
   const stateRef = useRef({
     activeTool: 'select' as ToolType,
     toolSettings: {
-      select: { color: '#ff0000', fillColor: 'transparent', opacity: 1, fillOpacity: 0, strokeWidth: 4, strokeDashArray: null },
-      rectangle: { color: '#ff0000', fillColor: 'transparent', opacity: 1, fillOpacity: 0, strokeWidth: 4, strokeDashArray: null },
-      arrow: { color: '#ff0000', fillColor: '#ff0000', opacity: 1, fillOpacity: 1, strokeWidth: 4, strokeDashArray: null },
-      text: { color: '#ff0000', fillColor: '#ff0000', opacity: 1, fillOpacity: 1, strokeWidth: 0, strokeDashArray: null },
-      step: { color: '#ff0000', fillColor: '#ff0000', opacity: 1, fillOpacity: 1, strokeWidth: 0, strokeDashArray: null },
-      pen: { color: '#ff0000', fillColor: 'transparent', opacity: 1, fillOpacity: 0, strokeWidth: 4, strokeDashArray: null },
+      select: { color: '#ff0000', fillColor: 'transparent', strokeOpacity: 1, fillOpacity: 0, strokeWidth: 4, strokeDashArray: null },
+      rectangle: { color: '#ff0000', fillColor: 'transparent', strokeOpacity: 1, fillOpacity: 0, strokeWidth: 4, strokeDashArray: null },
+      arrow: { color: '#ff0000', fillColor: '#ff0000', strokeOpacity: 1, fillOpacity: 1, strokeWidth: 4, strokeDashArray: null },
+      text: { color: '#ff0000', fillColor: '#ff0000', strokeOpacity: 1, fillOpacity: 1, strokeWidth: 0, strokeDashArray: null },
+      step: { color: '#ff0000', fillColor: '#ff0000', strokeOpacity: 1, fillOpacity: 1, strokeWidth: 0, strokeDashArray: null },
+      pen: { color: '#ff0000', fillColor: 'transparent', strokeOpacity: 1, fillOpacity: 0, strokeWidth: 4, strokeDashArray: null },
     } as Record<ToolType, ToolSettings>,
     stepCount: 1,
     isMouseDown: false,
@@ -124,13 +136,11 @@ export const useFabric = () => {
         canvas.freeDrawingBrush = new PencilBrush(canvas);
         canvas.freeDrawingBrush.color = settings.color;
         canvas.freeDrawingBrush.width = settings.strokeWidth;
-        // 不透明度の反映（fabric.jsのブラシは color に rgba を指定することで対応）
-        if (settings.opacity < 1) {
-          const r = parseInt(settings.color.slice(1, 3), 16);
-          const g = parseInt(settings.color.slice(3, 5), 16);
-          const b = parseInt(settings.color.slice(5, 7), 16);
-          canvas.freeDrawingBrush.color = `rgba(${r}, ${g}, ${b}, ${settings.opacity})`;
-        }
+        // 不透明度の反映
+        const r = parseInt(settings.color.slice(1, 3), 16);
+        const g = parseInt(settings.color.slice(3, 5), 16);
+        const b = parseInt(settings.color.slice(5, 7), 16);
+        canvas.freeDrawingBrush.color = `rgba(${r}, ${g}, ${b}, ${settings.strokeOpacity})`;
       }
     }
   }, []);
@@ -142,22 +152,13 @@ export const useFabric = () => {
         [tool]: { ...prev[tool], ...updates }
       };
       stateRef.current.toolSettings = newSettings;
-      
-      const hexToRgba = (hex: string, opacity: number) => {
-        if (!hex || hex === 'transparent') return 'transparent';
-        if (!hex.startsWith('#')) return hex;
-        const r = parseInt(hex.slice(1, 3), 16);
-        const g = parseInt(hex.slice(3, 5), 16);
-        const b = parseInt(hex.slice(5, 7), 16);
-        return `rgba(${r}, ${g}, ${b}, ${opacity})`;
-      };
 
       // アクティブなツールがペンで、その設定が更新された場合はブラシに即座に反映
       if (stateRef.current.activeTool === 'pen' && tool === 'pen' && fabricCanvas.current?.isDrawingMode) {
         const penSettings = newSettings.pen;
         const brush = fabricCanvas.current.freeDrawingBrush!;
         brush.width = penSettings.strokeWidth;
-        brush.color = hexToRgba(penSettings.color, penSettings.opacity);
+        brush.color = hexToRgba(penSettings.color, penSettings.strokeOpacity);
       }
 
       // 選択中のオブジェクトがあれば、そのプロパティも更新
@@ -169,18 +170,19 @@ export const useFabric = () => {
           // 現在変更中のツールの設定を使用
           const s = newSettings[tool];
 
-          if (updates.color || updates.opacity !== undefined) {
+          if (updates.color || updates.strokeOpacity !== undefined) {
             modified = true;
-            if (obj instanceof Rect) obj.set({ stroke: s.color, opacity: s.opacity });
-            else if (obj instanceof IText || obj instanceof Text) obj.set({ fill: s.color, opacity: s.opacity });
+            const strokeColor = hexToRgba(s.color, s.strokeOpacity);
+            if (obj instanceof Rect) obj.set({ stroke: strokeColor, opacity: 1 });
+            else if (obj instanceof IText || obj instanceof Text) obj.set({ fill: strokeColor, opacity: 1 });
             else if (obj instanceof Group) {
-              obj.set({ opacity: s.opacity });
+              obj.set({ opacity: 1 });
               obj.getObjects().forEach(child => {
-                if (child instanceof Line) child.set({ stroke: s.color });
-                else if (child instanceof Triangle) child.set({ fill: s.color });
-                else if (child instanceof Circle) child.set({ fill: s.color });
+                if (child instanceof Line) child.set({ stroke: strokeColor });
+                else if (child instanceof Triangle) child.set({ fill: strokeColor });
+                else if (child instanceof Circle) child.set({ fill: strokeColor });
               });
-            } else if (obj.type === 'path') obj.set({ stroke: s.color, opacity: s.opacity });
+            } else if (obj.type === 'path') obj.set({ stroke: strokeColor, opacity: 1 });
           }
           
           if (updates.fillColor || updates.fillOpacity !== undefined) {
@@ -248,8 +250,8 @@ export const useFabric = () => {
       const radius = 18;
       const circle = new Circle({ 
         radius, 
-        fill: settings.color, 
-        opacity: settings.opacity,
+        fill: hexToRgba(settings.color, settings.strokeOpacity), 
+        opacity: 1,
         originX: 'center', 
         originY: 'center' 
       });
@@ -284,24 +286,16 @@ export const useFabric = () => {
       const settings = state.toolSettings[tool];
 
       if (tool === 'rectangle') {
-        let fill = settings.fillColor;
-        if (fill !== 'transparent' && settings.fillOpacity < 1) {
-          const r = parseInt(fill.slice(1, 3), 16);
-          const g = parseInt(fill.slice(3, 5), 16);
-          const b = parseInt(fill.slice(5, 7), 16);
-          fill = `rgba(${r}, ${g}, ${b}, ${settings.fillOpacity})`;
-        }
-
         const rect = new Rect({
           left: pointer.x,
           top: pointer.y,
           width: 0,
           height: 0,
-          fill: fill,
-          stroke: settings.color,
+          fill: hexToRgba(settings.fillColor, settings.fillOpacity),
+          stroke: hexToRgba(settings.color, settings.strokeOpacity),
           strokeWidth: settings.strokeWidth,
           strokeDashArray: settings.strokeDashArray || undefined,
-          opacity: settings.opacity,
+          opacity: 1,
           selectable: false,
           evented: false,
           originX: 'left',
@@ -311,9 +305,9 @@ export const useFabric = () => {
         state.currentObject = rect;
       } else if (tool === 'arrow') {
         const line = new Line([pointer.x, pointer.y, pointer.x, pointer.y], {
-          stroke: settings.color,
+          stroke: hexToRgba(settings.color, settings.strokeOpacity),
           strokeWidth: settings.strokeWidth,
-          opacity: settings.opacity,
+          opacity: 1,
           selectable: false,
           evented: false,
           strokeLineCap: 'round'
@@ -321,8 +315,8 @@ export const useFabric = () => {
         const head = new Triangle({
           width: 15,
           height: 15,
-          fill: settings.color,
-          opacity: settings.opacity,
+          fill: hexToRgba(settings.color, settings.strokeOpacity),
+          opacity: 1,
           originX: 'center',
           originY: 'center',
           selectable: false,
@@ -337,8 +331,8 @@ export const useFabric = () => {
           left: pointer.x,
           top: pointer.y,
           fontSize: 24,
-          fill: settings.color,
-          opacity: settings.opacity,
+          fill: hexToRgba(settings.color, settings.strokeOpacity),
+          opacity: 1,
         });
         canvas.add(t);
         canvas.setActiveObject(t);
@@ -440,7 +434,20 @@ export const useFabric = () => {
         updates.color = selected.stroke as string;
         updates.strokeWidth = selected.strokeWidth;
         updates.strokeDashArray = (selected.strokeDashArray as number[]) || null;
-        updates.opacity = selected.opacity;
+        
+        const stroke = selected.stroke as string;
+        if (stroke && stroke.startsWith('rgba')) {
+          const match = stroke.match(/rgba\((\d+),\s*(\d+),\s*(\d+),\s*([\d.]+)\)/);
+          if (match) {
+            const r = parseInt(match[1]);
+            const g = parseInt(match[2]);
+            const b = parseInt(match[3]);
+            updates.color = `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+            updates.strokeOpacity = parseFloat(match[4]);
+          }
+        } else {
+          updates.strokeOpacity = selected.opacity; // fallback
+        }
         
         const fill = selected.fill as string;
         if (fill && fill.startsWith('rgba')) {
@@ -461,8 +468,20 @@ export const useFabric = () => {
         }
       } else if (selected instanceof IText || selected instanceof Text) {
         tool = 'text';
-        updates.color = selected.fill as string;
-        updates.opacity = selected.opacity;
+        const fill = selected.fill as string;
+        if (fill && fill.startsWith('rgba')) {
+          const match = fill.match(/rgba\((\d+),\s*(\d+),\s*(\d+),\s*([\d.]+)\)/);
+          if (match) {
+            const r = parseInt(match[1]);
+            const g = parseInt(match[2]);
+            const b = parseInt(match[3]);
+            updates.color = `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+            updates.strokeOpacity = parseFloat(match[4]);
+          }
+        } else {
+          updates.color = fill;
+          updates.strokeOpacity = selected.opacity;
+        }
       } else if (selected instanceof Group) {
         const children = selected.getObjects();
         const isArrow = children.some(c => c instanceof Triangle);
@@ -472,27 +491,66 @@ export const useFabric = () => {
           tool = 'arrow';
           const line = children.find(c => c instanceof Line) as Line;
           if (line) {
-            updates.color = line.stroke as string;
+            const stroke = line.stroke as string;
+            if (stroke && stroke.startsWith('rgba')) {
+              const match = stroke.match(/rgba\((\d+),\s*(\d+),\s*(\d+),\s*([\d.]+)\)/);
+              if (match) {
+                const r = parseInt(match[1]);
+                const g = parseInt(match[2]);
+                const b = parseInt(match[3]);
+                updates.color = `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+                updates.strokeOpacity = parseFloat(match[4]);
+              }
+            } else {
+              updates.color = stroke;
+              updates.strokeOpacity = selected.opacity;
+            }
             updates.strokeWidth = line.strokeWidth;
             updates.strokeDashArray = (line.strokeDashArray as number[]) || null;
           }
-          updates.opacity = selected.opacity;
         } else if (isStep) {
           tool = 'step';
           const circle = children.find(c => c instanceof Circle) as Circle;
-          if (circle) updates.color = circle.fill as string;
-          updates.opacity = selected.opacity;
+          if (circle) {
+            const fill = circle.fill as string;
+            if (fill && fill.startsWith('rgba')) {
+              const match = fill.match(/rgba\((\d+),\s*(\d+),\s*(\d+),\s*([\d.]+)\)/);
+              if (match) {
+                const r = parseInt(match[1]);
+                const g = parseInt(match[2]);
+                const b = parseInt(match[3]);
+                updates.color = `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+                updates.strokeOpacity = parseFloat(match[4]);
+              }
+            } else {
+              updates.color = fill;
+              updates.strokeOpacity = selected.opacity;
+            }
+          }
         }
       } else if (selected.type === 'path') {
         tool = 'pen';
-        updates.color = selected.stroke as string;
-        updates.opacity = selected.opacity;
+        const stroke = selected.stroke as string;
+        if (stroke && stroke.startsWith('rgba')) {
+          const match = stroke.match(/rgba\((\d+),\s*(\d+),\s*(\d+),\s*([\d.]+)\)/);
+          if (match) {
+            const r = parseInt(match[1]);
+            const g = parseInt(match[2]);
+            const b = parseInt(match[3]);
+            updates.color = `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+            updates.strokeOpacity = parseFloat(match[4]);
+          }
+        } else {
+          updates.color = stroke;
+          updates.strokeOpacity = selected.opacity;
+        }
         updates.strokeWidth = selected.strokeWidth;
         updates.strokeDashArray = (selected.strokeDashArray as number[]) || null;
       }
 
       if (tool) {
-        if (updates.color) {
+        setActiveTool(tool);
+        if (Object.keys(updates).length > 0) {
           setToolSettings(prev => {
             const newSettings = {
               ...prev,
@@ -517,9 +575,13 @@ export const useFabric = () => {
     });
     canvas.on('path:created', (options: any) => {
       const settings = stateRef.current.toolSettings.pen;
-      if (settings.opacity < 1) {
-        options.path.set({ opacity: settings.opacity });
-      }
+      const r = parseInt(settings.color.slice(1, 3), 16);
+      const g = parseInt(settings.color.slice(3, 5), 16);
+      const b = parseInt(settings.color.slice(5, 7), 16);
+      options.path.set({ 
+        stroke: `rgba(${r}, ${g}, ${b}, ${settings.strokeOpacity})`,
+        opacity: 1 
+      });
       saveHistory();
     });
 

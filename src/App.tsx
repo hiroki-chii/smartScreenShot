@@ -52,6 +52,15 @@ const STROKE_STYLES = [
   { label: 'Dotted', value: [3, 4] },
 ];
 
+const hexToRgba = (hex: string, opacity: number) => {
+  if (!hex || hex === 'transparent') return 'transparent';
+  if (hex.startsWith('rgba')) return hex;
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `rgba(${r}, ${g}, ${b}, ${opacity})`;
+};
+
 const ColorGrid = ({ 
   selected, 
   onSelect, 
@@ -103,15 +112,71 @@ const ToolSettingsPanel = ({
 
   return (
     <div className="flex flex-col gap-6 p-6 w-72 bg-card/95 backdrop-blur-xl border border-border/50 rounded-2xl shadow-2xl animate-in fade-in zoom-in duration-200">
-      {/* Stroke Color Section */}
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-            {tool === 'text' || tool === 'step' ? 'Color' : 'Stroke Color'}
-          </label>
-          <div className="w-3 h-3 rounded-full shadow-inner" style={{ backgroundColor: settings.color }} />
+      {/* Stroke / Color Section */}
+      <div className="space-y-5">
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+              {tool === 'text' || tool === 'step' ? 'Color' : 'Stroke Color'}
+            </label>
+            <div 
+              className="w-3 h-3 rounded-full shadow-inner border border-border/50" 
+              style={{ backgroundColor: hexToRgba(settings.color, settings.strokeOpacity) }} 
+            />
+          </div>
+          <ColorGrid selected={settings.color} onSelect={(color) => onUpdate(tool, { color })} />
         </div>
-        <ColorGrid selected={settings.color} onSelect={(color) => onUpdate(tool, { color })} />
+
+        <div className="space-y-3 pt-1">
+          <div className="flex justify-between items-center">
+            <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+              {tool === 'text' || tool === 'step' ? 'Opacity' : 'Stroke Opacity'}
+            </label>
+            <span className="text-[10px] font-mono font-medium">{Math.round(settings.strokeOpacity * 100)}%</span>
+          </div>
+          <Slider 
+            value={[settings.strokeOpacity * 100]} 
+            max={100} 
+            min={0}
+            step={1} 
+            onValueChange={(v) => onUpdate(tool, { strokeOpacity: v[0] / 100 })} 
+          />
+        </div>
+
+        {isShape && (
+          <>
+            <div className="space-y-3 pt-1">
+              <div className="flex justify-between items-center">
+                <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Stroke Width</label>
+                <span className="text-[10px] font-mono font-medium">{settings.strokeWidth}px</span>
+              </div>
+              <Slider 
+                value={[settings.strokeWidth]} 
+                min={1}
+                max={30} 
+                step={1} 
+                onValueChange={(v) => onUpdate(tool, { strokeWidth: v[0] })} 
+              />
+            </div>
+
+            <div className="space-y-3 pt-1">
+              <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Stroke Style</label>
+              <div className="flex gap-2">
+                {STROKE_STYLES.map((style) => (
+                  <Button
+                    key={style.label}
+                    variant={JSON.stringify(settings.strokeDashArray) === JSON.stringify(style.value) ? "default" : "outline"}
+                    size="sm"
+                    className="flex-1 h-8 text-[10px] uppercase font-bold tracking-tight"
+                    onClick={() => onUpdate(tool, { strokeDashArray: style.value })}
+                  >
+                    {style.label}
+                  </Button>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
       </div>
       
       {/* Fill Color Section (Rectangle only for now) */}
@@ -144,57 +209,6 @@ const ToolSettingsPanel = ({
         </div>
       )}
 
-      {/* Stroke Style Section */}
-      {isShape && (
-        <div className="space-y-4 border-t border-border/50 pt-5">
-          <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Stroke Style</label>
-          <div className="flex gap-2">
-            {STROKE_STYLES.map((style) => (
-              <Button
-                key={style.label}
-                variant={JSON.stringify(settings.strokeDashArray) === JSON.stringify(style.value) ? "default" : "outline"}
-                size="sm"
-                className="flex-1 h-8 text-[10px] uppercase font-bold tracking-tight"
-                onClick={() => onUpdate(tool, { strokeDashArray: style.value })}
-              >
-                {style.label}
-              </Button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Common Sliders */}
-      <div className="space-y-4 border-t border-border/50 pt-5">
-        {isShape && (
-          <div className="space-y-3">
-            <div className="flex justify-between items-center">
-              <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Stroke Width</label>
-              <span className="text-[10px] font-mono font-medium">{settings.strokeWidth}px</span>
-            </div>
-            <Slider 
-              value={[settings.strokeWidth]} 
-              min={1}
-              max={30} 
-              step={1} 
-              onValueChange={(v) => onUpdate(tool, { strokeWidth: v[0] })} 
-            />
-          </div>
-        )}
-        <div className="space-y-3">
-          <div className="flex justify-between items-center">
-            <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Overall Opacity</label>
-            <span className="text-[10px] font-mono font-medium">{Math.round(settings.opacity * 100)}%</span>
-          </div>
-          <Slider 
-            value={[settings.opacity * 100]} 
-            max={100} 
-            min={5}
-            step={1} 
-            onValueChange={(v) => onUpdate(tool, { opacity: v[0] / 100 })} 
-          />
-        </div>
-      </div>
     </div>
   );
 };
@@ -243,12 +257,12 @@ const ToolbarButton = ({
                   <div className="absolute bottom-1 right-1 flex gap-0.5">
                     <div 
                       className="w-1.5 h-1.5 rounded-full border border-white/20 shadow-sm" 
-                      style={{ backgroundColor: settings.color }}
+                      style={{ backgroundColor: hexToRgba(settings.color, settings.strokeOpacity) }}
                     />
                     {settings.fillColor !== 'transparent' && (
                       <div 
                         className="w-1.5 h-1.5 rounded-full border border-white/20 shadow-sm" 
-                        style={{ backgroundColor: settings.fillColor }}
+                        style={{ backgroundColor: hexToRgba(settings.fillColor, settings.fillOpacity) }}
                       />
                     )}
                   </div>
