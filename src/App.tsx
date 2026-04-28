@@ -82,7 +82,8 @@ function App() {
     redo,
     canUndo,
     canRedo,
-    hasImage
+    hasImage,
+    deselectAll
   } = useFabric();
   
   const [theme, setTheme] = React.useState<'light' | 'dark' | 'system'>(
@@ -243,7 +244,15 @@ function App() {
           </div>
         </header>
 
-        <div className="flex-1 overflow-auto bg-muted/30 flex items-center justify-center p-12">
+        <div 
+          className="flex-1 overflow-auto bg-muted/30 flex items-center justify-center p-12"
+          onMouseDown={(e) => {
+            // キャンバス自体やその中身以外の場所をクリックした判定
+            if (e.target === e.currentTarget) {
+              deselectAll();
+            }
+          }}
+        >
           <div className={cn(
             "relative transition-shadow duration-500",
             hasImage ? "shadow-[0_20px_50px_rgba(0,0,0,0.2)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.5)]" : ""

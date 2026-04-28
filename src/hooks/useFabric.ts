@@ -329,6 +329,12 @@ export const useFabric = () => {
     };
   }, [setActiveTool, saveHistory, undo, redo]);
 
+  const deselectAll = useCallback(() => {
+    if (!fabricCanvas.current) return;
+    fabricCanvas.current.discardActiveObject();
+    fabricCanvas.current.requestRenderAll();
+  }, []);
+
   const deleteSelected = useCallback(() => {
     if (!fabricCanvas.current) return;
     const activeObjects = fabricCanvas.current.getActiveObjects();
@@ -364,6 +370,7 @@ export const useFabric = () => {
     redo,
     canUndo,
     canRedo,
-    hasImage
+    hasImage,
+    deselectAll
   };
 };
