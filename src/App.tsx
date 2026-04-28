@@ -47,9 +47,9 @@ const PRESET_COLORS = [
 ];
 
 const STROKE_STYLES = [
-  { label: 'Solid', value: null },
-  { label: 'Dashed', value: [10, 5] },
-  { label: 'Dotted', value: [3, 4] },
+  { label: 'Solid', value: 'solid' },
+  { label: 'Dashed', value: 'dashed' },
+  { label: 'Dotted', value: 'dotted' },
 ];
 
 const hexToRgba = (hex: string, opacity: number) => {
@@ -165,10 +165,10 @@ const ToolSettingsPanel = ({
                 {STROKE_STYLES.map((style) => (
                   <Button
                     key={style.label}
-                    variant={JSON.stringify(settings.strokeDashArray) === JSON.stringify(style.value) ? "default" : "outline"}
+                    variant={settings.strokeStyle === style.value ? "default" : "outline"}
                     size="sm"
                     className="flex-1 h-8 text-[10px] uppercase font-bold tracking-tight"
-                    onClick={() => onUpdate(tool, { strokeDashArray: style.value })}
+                    onClick={() => onUpdate(tool, { strokeStyle: style.value as any })}
                   >
                     {style.label}
                   </Button>
@@ -209,6 +209,22 @@ const ToolSettingsPanel = ({
         </div>
       )}
 
+      {/* Rotation Section */}
+      <div className="space-y-4 border-t border-border/50 pt-5">
+        <div className="space-y-3">
+          <div className="flex justify-between items-center">
+            <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Angle</label>
+            <span className="text-[10px] font-mono font-medium">{Math.round(settings.angle || 0)}°</span>
+          </div>
+          <Slider 
+            value={[settings.angle || 0]} 
+            min={0}
+            max={360} 
+            step={1} 
+            onValueChange={(v) => onUpdate(tool, { angle: v[0] })} 
+          />
+        </div>
+      </div>
     </div>
   );
 };
