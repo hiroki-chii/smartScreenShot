@@ -16,7 +16,10 @@ import {
   RotateCcw,
   Sun,
   Moon,
-  Monitor
+  Monitor,
+  ZoomIn,
+  ZoomOut,
+  Search
 } from 'lucide-react';
 
 // Using relative imports for stability
@@ -83,7 +86,11 @@ function App() {
     canUndo,
     canRedo,
     hasImage,
-    deselectAll
+    deselectAll,
+    zoom,
+    zoomIn,
+    zoomOut,
+    resetZoom
   } = useFabric();
   
   const [theme, setTheme] = React.useState<'light' | 'dark' | 'system'>(
@@ -209,6 +216,36 @@ function App() {
                 <TooltipContent>Redo</TooltipContent>
               </Tooltip>
             </TooltipProvider>
+
+            <div className="w-px h-6 bg-white/10 mx-1" />
+
+            <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-1">
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-7 w-7" 
+                onClick={zoomOut}
+                disabled={zoom <= 0.1}
+              >
+                <ZoomOut className="h-4 w-4" />
+              </Button>
+              <Button 
+                variant="ghost" 
+                className="h-7 px-2 text-xs font-mono" 
+                onClick={resetZoom}
+              >
+                {Math.round(zoom * 100)}%
+              </Button>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-7 w-7" 
+                onClick={zoomIn}
+                disabled={zoom >= 20}
+              >
+                <ZoomIn className="h-4 w-4" />
+              </Button>
+            </div>
 
             <div className="w-px h-6 bg-white/10 mx-1" />
 

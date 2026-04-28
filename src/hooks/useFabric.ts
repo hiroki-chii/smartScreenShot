@@ -16,6 +16,7 @@ export const useFabric = () => {
     startPoint: { x: 0, y: 0 },
     currentObject: null as any,
     currentHead: null as any,
+    baseSize: { width: 800, height: 600 },
   });
 
   const [activeTool, _setActiveTool] = useState<ToolType>('select');
@@ -24,6 +25,7 @@ export const useFabric = () => {
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
   const [hasImage, setHasImage] = useState(false);
+  const [zoom, setZoom] = useState(1);
   
   const history = useRef<string[]>([]);
   const historyIndex = useRef(-1);
@@ -120,6 +122,9 @@ export const useFabric = () => {
       selection: false,
     });
     fabricCanvas.current = canvas;
+    
+    // 現在のズーム状態を反映
+    canvas.setZoom(zoom);
 
     // 初期状態を保存
     saveHistory();
@@ -258,9 +263,31 @@ export const useFabric = () => {
       saveHistory();
     };
 
+    const handleMouseWheel = (opt: any) => {
+      const delta = opt.e.deltaY;
+      let newZoom = canvas.getZoom();
+      newZoom *= 0.999 ** delta;
+      if (newZoom > 20) newZoom = 20;
+      if (newZoom < 0.1) newZoom = 0.1;
+      
+      // 拡大・縮小に合わせてキャンバス要素のサイズも変更する
+      const base = stateRef.current.baseSize;
+      canvas.setDimensions({
+        width: base.width * newZoom,
+        height: base.height * newZoom
+      });
+      
+      canvas.setZoom(newZoom);
+      
+      opt.e.preventDefault();
+      opt.e.stopPropagation();
+      setZoom(newZoom);
+    };
+
     canvas.on('mouse:down', handleMouseDown);
     canvas.on('mouse:move', handleMouseMove);
     canvas.on('mouse:up', handleMouseUp);
+    canvas.on('mouse:wheel', handleMouseWheel);
     canvas.on('object:modified', handleObjectModified);
     canvas.on('path:created', () => saveHistory());
 
@@ -279,7 +306,17 @@ export const useFabric = () => {
             const scale = Math.min(maxWidth / img.width!, maxHeight / img.height!, 1);
             img.scale(scale);
             img.set({ left: 0, top: 0, originX: 'left', originY: 'top' });
-            canvas.setDimensions({ width: img.getScaledWidth(), height: img.getScaledHeight() });
+            
+            const scaledWidth = img.getScaledWidth();
+            const scaledHeight = img.getScaledHeight();
+            stateRef.current.baseSize = { width: scaledWidth, height: scaledHeight };
+            
+            canvas.setDimensions({ 
+              width: scaledWidth * zoom, 
+              height: scaledHeight * zoom 
+            });
+            canvas.setZoom(zoom);
+            
             canvas.backgroundImage = img;
             canvas.requestRenderAll();
             setHasImage(true);
@@ -356,6 +393,49 @@ export const useFabric = () => {
     saveHistory();
   }, [saveHistory]);
 
+  const zoomIn = useCallback(() => {
+    if (!fabricCanvas.current) return;
+    const canvas = fabricCanvas.current;
+    const newZoom = Math.min(canvas.getZoom() * 1.1, 20);
+    const base = stateRef.current.baseSize;
+    
+    canvas.setDimensions({
+      width: base.width * newZoom,
+      height: base.height * newZoom
+    });
+    canvas.setZoom(newZoom);
+    setZoom(newZoom);
+  }, []);
+
+  const zoomOut = useCallback(() => {
+    if (!fabricCanvas.current) return;
+    const canvas = fabricCanvas.current;
+    const newZoom = Math.max(canvas.getZoom() / 1.1, 0.1);
+    const base = stateRef.current.baseSize;
+    
+    canvas.setDimensions({
+      width: base.width * newZoom,
+      height: base.height * newZoom
+    });
+    canvas.setZoom(newZoom);
+    setZoom(newZoom);
+  }, []);
+
+  const resetZoom = useCallback(() => {
+    if (!fabricCanvas.current) return;
+    const canvas = fabricCanvas.current;
+    const base = stateRef.current.baseSize;
+    
+    canvas.setDimensions({
+      width: base.width,
+      height: base.height
+    });
+    canvas.setZoom(1);
+    // ズームリセット時は位置も戻す
+    canvas.setViewportTransform([1, 0, 0, 1, 0, 0]);
+    setZoom(1);
+  }, []);
+
   return { 
     canvasRef, 
     fabricCanvas, 
@@ -371,6 +451,10 @@ export const useFabric = () => {
     canUndo,
     canRedo,
     hasImage,
-    deselectAll
+    deselectAll,
+    zoom,
+    zoomIn,
+    zoomOut,
+    resetZoom
   };
 };
