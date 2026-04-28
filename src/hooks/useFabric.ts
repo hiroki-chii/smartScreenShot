@@ -69,6 +69,7 @@ export const useFabric = () => {
     currentHead: null as any,
     baseSize: { width: 800, height: 600 },
   });
+  const clipboard = useRef<any>(null);
 
   const [stepCount, _setStepCount] = useState(1);
   const [canUndo, setCanUndo] = useState(false);
@@ -750,6 +751,120 @@ export const useFabric = () => {
       if (e.ctrlKey && e.key.toLowerCase() === 'y') {
         e.preventDefault();
         redo();
+      }
+
+      // コピー (Ctrl + C)
+      if (e.ctrlKey && e.key.toLowerCase() === 'c') {
+        const activeObject = canvas.getActiveObject();
+        if (activeObject) {
+          e.preventDefault();
+          activeObject.clone().then((cloned: any) => {
+            clipboard.current = cloned;
+          });
+        }
+      }
+
+      // 貼り付け (Ctrl + V)
+      if (e.ctrlKey && e.key.toLowerCase() === 'v') {
+        // 内部クリップボードにオブジェクトがある場合のみ処理
+        // システムクリップボードからの画像貼り付けは handlePaste で行われる
+        if (clipboard.current) {
+          e.preventDefault();
+          clipboard.current.clone().then((clonedObj: any) => {
+            canvas.discardActiveObject();
+            clonedObj.set({
+              left: clonedObj.left + 20,
+              top: clonedObj.top + 20,
+              evented: true,
+            });
+            if (clonedObj.type === 'activeSelection') {
+              // active selection needs a reference to the canvas.
+              clonedObj.canvas = canvas;
+              clonedObj.forEachObject((obj: any) => {
+                canvas.add(obj);
+              });
+              // this targets the objects in the selection, not the selection itself
+              clonedObj.setCoords();
+            } else {
+              canvas.add(clonedObj);
+            }
+            // 次の貼り付けのために位置をずらす
+            clipboard.current.top += 20;
+            clipboard.current.left += 20;
+            canvas.setActiveObject(clonedObj);
+            canvas.requestRenderAll();
+            saveHistory();
+          });
+        }
+      }
+
+      // 方向キーによる移動・回転・サイズ変更
+      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+        const activeObjects = canvas.getActiveObjects();
+        if (activeObjects.length > 0) {
+          e.preventDefault();
+          
+          if (e.ctrlKey) {
+            // サイズ変更（スケール調整）
+            const step = e.shiftKey ? 0.1 : 0.01;
+            activeObjects.forEach(obj => {
+              const currentScaleX = obj.scaleX || 1;
+              const currentScaleY = obj.scaleY || 1;
+              let newScaleX = currentScaleX;
+              let newScaleY = currentScaleY;
+              
+              if (e.key === 'ArrowUp' || e.key === 'ArrowRight') {
+                newScaleX += step;
+                newScaleY += step;
+              } else {
+                newScaleX = Math.max(0.01, newScaleX - step);
+                newScaleY = Math.max(0.01, newScaleY - step);
+              }
+              
+              obj.set({ scaleX: newScaleX, scaleY: newScaleY });
+              obj.setCoords();
+            });
+          } else if (e.altKey) {
+            // 回転
+            const step = e.shiftKey ? 15 : 1;
+            activeObjects.forEach(obj => {
+              const currentAngle = obj.angle || 0;
+              let newAngle = currentAngle;
+              
+              if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+                newAngle -= step;
+              } else {
+                newAngle += step;
+              }
+              
+              obj.set('angle', newAngle);
+              obj.setCoords();
+            });
+          } else {
+            // 移動
+            const step = e.shiftKey ? 10 : 1;
+            activeObjects.forEach(obj => {
+              switch (e.key) {
+                case 'ArrowUp':
+                  obj.set('top', obj.top - step);
+                  break;
+                case 'ArrowDown':
+                  obj.set('top', obj.top + step);
+                  break;
+                case 'ArrowLeft':
+                  obj.set('left', obj.left - step);
+                  break;
+                case 'ArrowRight':
+                  obj.set('left', obj.left + step);
+                  break;
+              }
+              obj.setCoords();
+            });
+          }
+          
+          canvas.requestRenderAll();
+          saveHistory();
+        }
       }
     };
 

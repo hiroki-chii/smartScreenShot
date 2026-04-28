@@ -274,24 +274,7 @@ const ToolSettingsPanel = ({
         </div>
       )}
 
-      {/* Rotation Section (Arrow only) */}
-      {tool === 'arrow' && (
-        <div className="space-y-4 border-t border-border/50 pt-5">
-          <div className="space-y-3">
-            <div className="flex justify-between items-center">
-              <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Angle</label>
-              <span className="text-[10px] font-mono font-medium">{Math.round(settings.angle || 0)}°</span>
-            </div>
-            <Slider 
-              value={[settings.angle || 0]} 
-              min={0}
-              max={360} 
-              step={1} 
-              onValueChange={(v) => onUpdate(tool, { angle: v[0] })} 
-            />
-          </div>
-        </div>
-      )}
+
 
       {/* Pen Mode Section (Pen only) */}
       {tool === 'pen' && (
