@@ -11,9 +11,8 @@ export interface ToolSettings {
   strokeWidth: number;
   strokeStyle: 'solid' | 'dashed' | 'dotted';
   angle: number;
-  fontWeight: string;
-  fontStyle: string;
   underline: boolean;
+  fontSize: number;
 }
 
 const getDashArray = (style: string, width: number) => {
@@ -42,23 +41,23 @@ export const useFabric = () => {
 
   const [activeTool, _setActiveTool] = useState<ToolType>('select');
   const [toolSettings, setToolSettings] = useState<Record<ToolType, ToolSettings>>({
-    select: { color: '#ff0000', fillColor: 'transparent', strokeOpacity: 1, fillOpacity: 0, strokeWidth: 4, strokeStyle: 'solid', angle: 0, fontWeight: 'normal', fontStyle: 'normal', underline: false },
-    rectangle: { color: '#ff0000', fillColor: 'transparent', strokeOpacity: 1, fillOpacity: 0, strokeWidth: 4, strokeStyle: 'solid', angle: 0, fontWeight: 'normal', fontStyle: 'normal', underline: false },
-    arrow: { color: '#ff0000', fillColor: '#ff0000', strokeOpacity: 1, fillOpacity: 1, strokeWidth: 4, strokeStyle: 'solid', angle: 0, fontWeight: 'normal', fontStyle: 'normal', underline: false },
-    text: { color: '#ff0000', fillColor: '#ff0000', strokeOpacity: 1, fillOpacity: 1, strokeWidth: 0, strokeStyle: 'solid', angle: 0, fontWeight: 'normal', fontStyle: 'normal', underline: false },
-    step: { color: '#ff0000', fillColor: '#ff0000', strokeOpacity: 1, fillOpacity: 1, strokeWidth: 0, strokeStyle: 'solid', angle: 0, fontWeight: 'bold', fontStyle: 'normal', underline: false },
-    pen: { color: '#ff0000', fillColor: 'transparent', strokeOpacity: 1, fillOpacity: 0, strokeWidth: 4, strokeStyle: 'solid', angle: 0, fontWeight: 'normal', fontStyle: 'normal', underline: false },
+    select: { color: '#ff0000', fillColor: 'transparent', strokeOpacity: 1, fillOpacity: 0, strokeWidth: 4, strokeStyle: 'solid', angle: 0, fontWeight: 'normal', fontStyle: 'normal', underline: false, fontSize: 24 },
+    rectangle: { color: '#ff0000', fillColor: 'transparent', strokeOpacity: 1, fillOpacity: 0, strokeWidth: 4, strokeStyle: 'solid', angle: 0, fontWeight: 'normal', fontStyle: 'normal', underline: false, fontSize: 24 },
+    arrow: { color: '#ff0000', fillColor: '#ff0000', strokeOpacity: 1, fillOpacity: 1, strokeWidth: 4, strokeStyle: 'solid', angle: 0, fontWeight: 'normal', fontStyle: 'normal', underline: false, fontSize: 24 },
+    text: { color: '#ff0000', fillColor: '#ff0000', strokeOpacity: 1, fillOpacity: 1, strokeWidth: 0, strokeStyle: 'solid', angle: 0, fontWeight: 'normal', fontStyle: 'normal', underline: false, fontSize: 24 },
+    step: { color: '#ff0000', fillColor: '#ff0000', strokeOpacity: 1, fillOpacity: 1, strokeWidth: 0, strokeStyle: 'solid', angle: 0, fontWeight: 'bold', fontStyle: 'normal', underline: false, fontSize: 20 },
+    pen: { color: '#ff0000', fillColor: 'transparent', strokeOpacity: 1, fillOpacity: 0, strokeWidth: 4, strokeStyle: 'solid', angle: 0, fontWeight: 'normal', fontStyle: 'normal', underline: false, fontSize: 24 },
   });
 
   const stateRef = useRef({
     activeTool: 'select' as ToolType,
     toolSettings: {
-      select: { color: '#ff0000', fillColor: 'transparent', strokeOpacity: 1, fillOpacity: 0, strokeWidth: 4, strokeStyle: 'solid', angle: 0, fontWeight: 'normal', fontStyle: 'normal', underline: false },
-      rectangle: { color: '#ff0000', fillColor: 'transparent', strokeOpacity: 1, fillOpacity: 0, strokeWidth: 4, strokeStyle: 'solid', angle: 0, fontWeight: 'normal', fontStyle: 'normal', underline: false },
-      arrow: { color: '#ff0000', fillColor: '#ff0000', strokeOpacity: 1, fillOpacity: 1, strokeWidth: 4, strokeStyle: 'solid', angle: 0, fontWeight: 'normal', fontStyle: 'normal', underline: false },
-      text: { color: '#ff0000', fillColor: '#ff0000', strokeOpacity: 1, fillOpacity: 1, strokeWidth: 0, strokeStyle: 'solid', angle: 0, fontWeight: 'normal', fontStyle: 'normal', underline: false },
-      step: { color: '#ff0000', fillColor: '#ff0000', strokeOpacity: 1, fillOpacity: 1, strokeWidth: 0, strokeStyle: 'solid', angle: 0, fontWeight: 'bold', fontStyle: 'normal', underline: false },
-      pen: { color: '#ff0000', fillColor: 'transparent', strokeOpacity: 1, fillOpacity: 0, strokeWidth: 4, strokeStyle: 'solid', angle: 0, fontWeight: 'normal', fontStyle: 'normal', underline: false },
+      select: { color: '#ff0000', fillColor: 'transparent', strokeOpacity: 1, fillOpacity: 0, strokeWidth: 4, strokeStyle: 'solid', angle: 0, fontWeight: 'normal', fontStyle: 'normal', underline: false, fontSize: 24 },
+      rectangle: { color: '#ff0000', fillColor: 'transparent', strokeOpacity: 1, fillOpacity: 0, strokeWidth: 4, strokeStyle: 'solid', angle: 0, fontWeight: 'normal', fontStyle: 'normal', underline: false, fontSize: 24 },
+      arrow: { color: '#ff0000', fillColor: '#ff0000', strokeOpacity: 1, fillOpacity: 1, strokeWidth: 4, strokeStyle: 'solid', angle: 0, fontWeight: 'normal', fontStyle: 'normal', underline: false, fontSize: 24 },
+      text: { color: '#ff0000', fillColor: '#ff0000', strokeOpacity: 1, fillOpacity: 1, strokeWidth: 0, strokeStyle: 'solid', angle: 0, fontWeight: 'normal', fontStyle: 'normal', underline: false, fontSize: 24 },
+      step: { color: '#ff0000', fillColor: '#ff0000', strokeOpacity: 1, fillOpacity: 1, strokeWidth: 0, strokeStyle: 'solid', angle: 0, fontWeight: 'bold', fontStyle: 'normal', underline: false, fontSize: 20 },
+      pen: { color: '#ff0000', fillColor: 'transparent', strokeOpacity: 1, fillOpacity: 0, strokeWidth: 4, strokeStyle: 'solid', angle: 0, fontWeight: 'normal', fontStyle: 'normal', underline: false, fontSize: 24 },
     } as Record<ToolType, ToolSettings>,
     stepCount: 1,
     isMouseDown: false,
@@ -242,12 +241,28 @@ export const useFabric = () => {
             obj.set({ angle: updates.angle });
           }
 
-          if ((updates.fontWeight !== undefined || updates.fontStyle !== undefined || updates.underline !== undefined) && 
-              (obj instanceof IText || obj instanceof Text)) {
-            modified = true;
-            if (updates.fontWeight !== undefined) obj.set({ fontWeight: updates.fontWeight });
-            if (updates.fontStyle !== undefined) obj.set({ fontStyle: updates.fontStyle });
-            if (updates.underline !== undefined) obj.set({ underline: updates.underline });
+          const hasTextUpdate = updates.fontWeight !== undefined || updates.fontStyle !== undefined || 
+                               updates.underline !== undefined || updates.fontSize !== undefined;
+          
+          if (hasTextUpdate) {
+            if (obj instanceof IText || obj instanceof Text) {
+              modified = true;
+              if (updates.fontWeight !== undefined) obj.set({ fontWeight: updates.fontWeight });
+              if (updates.fontStyle !== undefined) obj.set({ fontStyle: updates.fontStyle });
+              if (updates.underline !== undefined) obj.set({ underline: updates.underline });
+              if (updates.fontSize !== undefined) obj.set({ fontSize: updates.fontSize });
+            } else if (obj instanceof Group) {
+              // ステップツール内のテキストへの反映
+              obj.getObjects().forEach(child => {
+                if (child instanceof Text) {
+                  modified = true;
+                  if (updates.fontWeight !== undefined) child.set({ fontWeight: updates.fontWeight });
+                  if (updates.fontStyle !== undefined) child.set({ fontStyle: updates.fontStyle });
+                  if (updates.underline !== undefined) child.set({ underline: updates.underline });
+                  if (updates.fontSize !== undefined) child.set({ fontSize: updates.fontSize });
+                }
+              });
+            }
           }
         });
 
@@ -370,7 +385,7 @@ export const useFabric = () => {
         const t = new IText('Input Text', {
           left: pointer.x,
           top: pointer.y,
-          fontSize: 24,
+          fontSize: settings.fontSize,
           fill: hexToRgba(settings.color, settings.strokeOpacity),
           fontFamily: DEFAULT_FONT_FAMILY,
           fontWeight: settings.fontWeight,
@@ -518,6 +533,7 @@ export const useFabric = () => {
         updates.fontWeight = selected.fontWeight;
         updates.fontStyle = selected.fontStyle;
         updates.underline = selected.underline;
+        updates.fontSize = selected.fontSize;
         const fill = selected.fill as string;
         if (fill && fill.startsWith('rgba')) {
           const match = fill.match(/rgba\((\d+),\s*(\d+),\s*(\d+),\s*([\d.]+)\)/);
@@ -579,6 +595,7 @@ export const useFabric = () => {
               updates.color = fill;
               updates.strokeOpacity = selected.opacity;
             }
+            updates.fontSize = circle.radius * 1.1; // Estimate fontSize from radius for steps
           }
         }
       } else if (selected.type === 'path') {

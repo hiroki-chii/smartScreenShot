@@ -257,6 +257,20 @@ const ToolSettingsPanel = ({
               <Underline className="w-4 h-4" />
             </Button>
           </div>
+
+          <div className="space-y-3 pt-1">
+            <div className="flex justify-between items-center">
+              <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">Font Size</span>
+              <span className="text-[10px] font-mono font-medium">{Math.round(settings.fontSize)}px</span>
+            </div>
+            <Slider 
+              value={[settings.fontSize]} 
+              min={8}
+              max={100} 
+              step={1} 
+              onValueChange={(v) => onUpdate(tool, { fontSize: v[0] })} 
+            />
+          </div>
         </div>
       )}
 
