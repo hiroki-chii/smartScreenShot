@@ -809,6 +809,16 @@ export const useFabric = () => {
         redo();
       }
 
+      // テキスト編集開始 (F2)
+      if (e.key === 'F2') {
+        const activeObject = canvas.getActiveObject();
+        if (activeObject && activeObject instanceof IText) {
+          e.preventDefault();
+          activeObject.enterEditing();
+          canvas.requestRenderAll();
+        }
+      }
+
       // コピー (Ctrl + C)
       if (e.ctrlKey && e.key.toLowerCase() === 'c') {
         const activeObject = canvas.getActiveObject();
