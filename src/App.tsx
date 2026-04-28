@@ -18,7 +18,10 @@ import {
   Monitor,
   ZoomIn,
   ZoomOut,
-  Type as TypeIcon
+  Type as TypeIcon,
+  Bold,
+  Italic,
+  Underline
 } from 'lucide-react';
 
 // Using relative imports for stability
@@ -209,22 +212,57 @@ const ToolSettingsPanel = ({
         </div>
       )}
 
-      {/* Rotation Section */}
-      <div className="space-y-4 border-t border-border/50 pt-5">
-        <div className="space-y-3">
-          <div className="flex justify-between items-center">
-            <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Angle</label>
-            <span className="text-[10px] font-mono font-medium">{Math.round(settings.angle || 0)}°</span>
+      {/* Text Style Section (Text tool only) */}
+      {(tool === 'text' || tool === 'step') && (
+        <div className="space-y-4 border-t border-border/50 pt-5">
+          <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Text Style</label>
+          <div className="flex gap-2">
+            <Button
+              variant={settings.fontWeight === 'bold' ? "default" : "outline"}
+              size="sm"
+              className="flex-1 h-10"
+              onClick={() => onUpdate(tool, { fontWeight: settings.fontWeight === 'bold' ? 'normal' : 'bold' })}
+            >
+              <Bold className="w-4 h-4" />
+            </Button>
+            <Button
+              variant={settings.fontStyle === 'italic' ? "default" : "outline"}
+              size="sm"
+              className="flex-1 h-10"
+              onClick={() => onUpdate(tool, { fontStyle: settings.fontStyle === 'italic' ? 'normal' : 'italic' })}
+            >
+              <Italic className="w-4 h-4" />
+            </Button>
+            <Button
+              variant={settings.underline ? "default" : "outline"}
+              size="sm"
+              className="flex-1 h-10"
+              onClick={() => onUpdate(tool, { underline: !settings.underline })}
+            >
+              <Underline className="w-4 h-4" />
+            </Button>
           </div>
-          <Slider 
-            value={[settings.angle || 0]} 
-            min={0}
-            max={360} 
-            step={1} 
-            onValueChange={(v) => onUpdate(tool, { angle: v[0] })} 
-          />
         </div>
-      </div>
+      )}
+
+      {/* Rotation Section (Arrow only) */}
+      {tool === 'arrow' && (
+        <div className="space-y-4 border-t border-border/50 pt-5">
+          <div className="space-y-3">
+            <div className="flex justify-between items-center">
+              <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Angle</label>
+              <span className="text-[10px] font-mono font-medium">{Math.round(settings.angle || 0)}°</span>
+            </div>
+            <Slider 
+              value={[settings.angle || 0]} 
+              min={0}
+              max={360} 
+              step={1} 
+              onValueChange={(v) => onUpdate(tool, { angle: v[0] })} 
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };

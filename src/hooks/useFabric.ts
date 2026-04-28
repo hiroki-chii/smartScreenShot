@@ -11,6 +11,9 @@ export interface ToolSettings {
   strokeWidth: number;
   strokeStyle: 'solid' | 'dashed' | 'dotted';
   angle: number;
+  fontWeight: string;
+  fontStyle: string;
+  underline: boolean;
 }
 
 const getDashArray = (style: string, width: number) => {
@@ -31,29 +34,31 @@ const hexToRgba = (hex: string, opacity: number) => {
   return `rgba(${r}, ${g}, ${b}, ${opacity})`;
 };
 
+const DEFAULT_FONT_FAMILY = '"Yu Gothic", "YuGothic", "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Meiryo", sans-serif';
+
 export const useFabric = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fabricCanvas = useRef<Canvas | null>(null);
-  
+
   const [activeTool, _setActiveTool] = useState<ToolType>('select');
   const [toolSettings, setToolSettings] = useState<Record<ToolType, ToolSettings>>({
-    select: { color: '#ff0000', fillColor: 'transparent', strokeOpacity: 1, fillOpacity: 0, strokeWidth: 4, strokeStyle: 'solid', angle: 0 },
-    rectangle: { color: '#ff0000', fillColor: 'transparent', strokeOpacity: 1, fillOpacity: 0, strokeWidth: 4, strokeStyle: 'solid', angle: 0 },
-    arrow: { color: '#ff0000', fillColor: '#ff0000', strokeOpacity: 1, fillOpacity: 1, strokeWidth: 4, strokeStyle: 'solid', angle: 0 },
-    text: { color: '#ff0000', fillColor: '#ff0000', strokeOpacity: 1, fillOpacity: 1, strokeWidth: 0, strokeStyle: 'solid', angle: 0 },
-    step: { color: '#ff0000', fillColor: '#ff0000', strokeOpacity: 1, fillOpacity: 1, strokeWidth: 0, strokeStyle: 'solid', angle: 0 },
-    pen: { color: '#ff0000', fillColor: 'transparent', strokeOpacity: 1, fillOpacity: 0, strokeWidth: 4, strokeStyle: 'solid', angle: 0 },
+    select: { color: '#ff0000', fillColor: 'transparent', strokeOpacity: 1, fillOpacity: 0, strokeWidth: 4, strokeStyle: 'solid', angle: 0, fontWeight: 'normal', fontStyle: 'normal', underline: false },
+    rectangle: { color: '#ff0000', fillColor: 'transparent', strokeOpacity: 1, fillOpacity: 0, strokeWidth: 4, strokeStyle: 'solid', angle: 0, fontWeight: 'normal', fontStyle: 'normal', underline: false },
+    arrow: { color: '#ff0000', fillColor: '#ff0000', strokeOpacity: 1, fillOpacity: 1, strokeWidth: 4, strokeStyle: 'solid', angle: 0, fontWeight: 'normal', fontStyle: 'normal', underline: false },
+    text: { color: '#ff0000', fillColor: '#ff0000', strokeOpacity: 1, fillOpacity: 1, strokeWidth: 0, strokeStyle: 'solid', angle: 0, fontWeight: 'normal', fontStyle: 'normal', underline: false },
+    step: { color: '#ff0000', fillColor: '#ff0000', strokeOpacity: 1, fillOpacity: 1, strokeWidth: 0, strokeStyle: 'solid', angle: 0, fontWeight: 'bold', fontStyle: 'normal', underline: false },
+    pen: { color: '#ff0000', fillColor: 'transparent', strokeOpacity: 1, fillOpacity: 0, strokeWidth: 4, strokeStyle: 'solid', angle: 0, fontWeight: 'normal', fontStyle: 'normal', underline: false },
   });
 
   const stateRef = useRef({
     activeTool: 'select' as ToolType,
     toolSettings: {
-      select: { color: '#ff0000', fillColor: 'transparent', strokeOpacity: 1, fillOpacity: 0, strokeWidth: 4, strokeStyle: 'solid', angle: 0 },
-      rectangle: { color: '#ff0000', fillColor: 'transparent', strokeOpacity: 1, fillOpacity: 0, strokeWidth: 4, strokeStyle: 'solid', angle: 0 },
-      arrow: { color: '#ff0000', fillColor: '#ff0000', strokeOpacity: 1, fillOpacity: 1, strokeWidth: 4, strokeStyle: 'solid', angle: 0 },
-      text: { color: '#ff0000', fillColor: '#ff0000', strokeOpacity: 1, fillOpacity: 1, strokeWidth: 0, strokeStyle: 'solid', angle: 0 },
-      step: { color: '#ff0000', fillColor: '#ff0000', strokeOpacity: 1, fillOpacity: 1, strokeWidth: 0, strokeStyle: 'solid', angle: 0 },
-      pen: { color: '#ff0000', fillColor: 'transparent', strokeOpacity: 1, fillOpacity: 0, strokeWidth: 4, strokeStyle: 'solid', angle: 0 },
+      select: { color: '#ff0000', fillColor: 'transparent', strokeOpacity: 1, fillOpacity: 0, strokeWidth: 4, strokeStyle: 'solid', angle: 0, fontWeight: 'normal', fontStyle: 'normal', underline: false },
+      rectangle: { color: '#ff0000', fillColor: 'transparent', strokeOpacity: 1, fillOpacity: 0, strokeWidth: 4, strokeStyle: 'solid', angle: 0, fontWeight: 'normal', fontStyle: 'normal', underline: false },
+      arrow: { color: '#ff0000', fillColor: '#ff0000', strokeOpacity: 1, fillOpacity: 1, strokeWidth: 4, strokeStyle: 'solid', angle: 0, fontWeight: 'normal', fontStyle: 'normal', underline: false },
+      text: { color: '#ff0000', fillColor: '#ff0000', strokeOpacity: 1, fillOpacity: 1, strokeWidth: 0, strokeStyle: 'solid', angle: 0, fontWeight: 'normal', fontStyle: 'normal', underline: false },
+      step: { color: '#ff0000', fillColor: '#ff0000', strokeOpacity: 1, fillOpacity: 1, strokeWidth: 0, strokeStyle: 'solid', angle: 0, fontWeight: 'bold', fontStyle: 'normal', underline: false },
+      pen: { color: '#ff0000', fillColor: 'transparent', strokeOpacity: 1, fillOpacity: 0, strokeWidth: 4, strokeStyle: 'solid', angle: 0, fontWeight: 'normal', fontStyle: 'normal', underline: false },
     } as Record<ToolType, ToolSettings>,
     stepCount: 1,
     isMouseDown: false,
@@ -68,14 +73,14 @@ export const useFabric = () => {
   const [canRedo, setCanRedo] = useState(false);
   const [hasImage, setHasImage] = useState(false);
   const [zoom, setZoom] = useState(1);
-  
+
   const history = useRef<string[]>([]);
   const historyIndex = useRef(-1);
 
   const saveHistory = useCallback(() => {
     if (!fabricCanvas.current) return;
     const json = JSON.stringify(fabricCanvas.current.toJSON());
-    
+
     // 同じ状態なら保存しない
     if (historyIndex.current >= 0 && history.current[historyIndex.current] === json) {
       return;
@@ -85,44 +90,44 @@ export const useFabric = () => {
     if (historyIndex.current < history.current.length - 1) {
       history.current = history.current.slice(0, historyIndex.current + 1);
     }
-    
+
     history.current.push(json);
     historyIndex.current++;
-    
+
     // 履歴の上限設定 (50件)
     if (history.current.length > 50) {
       history.current.shift();
       historyIndex.current--;
     }
-    
+
     setCanUndo(historyIndex.current > 0);
     setCanRedo(false);
   }, []);
 
   const undo = useCallback(async () => {
     if (historyIndex.current <= 0 || !fabricCanvas.current) return;
-    
+
     historyIndex.current--;
     const state = history.current[historyIndex.current];
     await fabricCanvas.current.loadFromJSON(state);
     fabricCanvas.current.renderAll();
-    
+
     setHasImage(!!fabricCanvas.current.backgroundImage);
-    
+
     setCanUndo(historyIndex.current > 0);
     setCanRedo(true);
   }, []);
 
   const redo = useCallback(async () => {
     if (historyIndex.current >= history.current.length - 1 || !fabricCanvas.current) return;
-    
+
     historyIndex.current++;
     const state = history.current[historyIndex.current];
     await fabricCanvas.current.loadFromJSON(state);
     fabricCanvas.current.renderAll();
-    
+
     setHasImage(!!fabricCanvas.current.backgroundImage);
-    
+
     setCanUndo(true);
     setCanRedo(historyIndex.current < history.current.length - 1);
   }, []);
@@ -130,12 +135,12 @@ export const useFabric = () => {
   const setActiveTool = useCallback((tool: ToolType) => {
     stateRef.current.activeTool = tool;
     _setActiveTool(tool);
-    
+
     if (fabricCanvas.current) {
       const canvas = fabricCanvas.current;
       canvas.selection = (tool === 'select');
       canvas.defaultCursor = (tool === 'select') ? 'default' : 'crosshair';
-      
+
       // ペンツールの切り替え
       canvas.isDrawingMode = (tool === 'pen');
       if (canvas.isDrawingMode) {
@@ -193,7 +198,7 @@ export const useFabric = () => {
               });
             } else if (obj.type === 'path') obj.set({ stroke: strokeColor, opacity: 1 });
           }
-          
+
           if (updates.fillColor || updates.fillOpacity !== undefined) {
             modified = true;
             if (obj instanceof Rect) {
@@ -209,8 +214,8 @@ export const useFabric = () => {
             modified = true;
             const dashArray = getDashArray(s.strokeStyle, s.strokeWidth);
             if (obj instanceof Rect || obj.type === 'path') {
-              obj.set({ 
-                strokeWidth: s.strokeWidth, 
+              obj.set({
+                strokeWidth: s.strokeWidth,
                 strokeDashArray: dashArray,
                 strokeLineCap: 'round',
                 strokeLineJoin: 'round'
@@ -219,8 +224,8 @@ export const useFabric = () => {
               const isArrow = obj.getObjects().some(c => c instanceof Triangle);
               obj.getObjects().forEach(child => {
                 if (child instanceof Line) {
-                  child.set({ 
-                    strokeWidth: s.strokeWidth, 
+                  child.set({
+                    strokeWidth: s.strokeWidth,
                     strokeDashArray: dashArray,
                     strokeLineCap: 'round'
                   });
@@ -236,6 +241,14 @@ export const useFabric = () => {
             modified = true;
             obj.set({ angle: updates.angle });
           }
+
+          if ((updates.fontWeight !== undefined || updates.fontStyle !== undefined || updates.underline !== undefined) && 
+              (obj instanceof IText || obj instanceof Text)) {
+            modified = true;
+            if (updates.fontWeight !== undefined) obj.set({ fontWeight: updates.fontWeight });
+            if (updates.fontStyle !== undefined) obj.set({ fontStyle: updates.fontStyle });
+            if (updates.underline !== undefined) obj.set({ underline: updates.underline });
+          }
         });
 
         if (modified) {
@@ -243,7 +256,7 @@ export const useFabric = () => {
           saveHistory();
         }
       }
-      
+
       return newSettings;
     });
   }, [saveHistory]);
@@ -258,7 +271,7 @@ export const useFabric = () => {
       selection: false,
     });
     fabricCanvas.current = canvas;
-    
+
     // 現在のズーム状態を反映
     canvas.setZoom(zoom);
 
@@ -269,18 +282,20 @@ export const useFabric = () => {
       const s = stateRef.current;
       const settings = s.toolSettings.step;
       const radius = 18;
-      const circle = new Circle({ 
-        radius, 
-        fill: hexToRgba(settings.color, settings.strokeOpacity), 
+      const circle = new Circle({
+        radius,
+        fill: hexToRgba(settings.color, settings.strokeOpacity),
         opacity: 1,
-        originX: 'center', 
-        originY: 'center' 
+        originX: 'center',
+        originY: 'center'
       });
-      const text = new Text(s.stepCount.toString(), { 
-        fontSize: 20, 
-        fill: '#fff', 
-        originX: 'center', 
-        originY: 'center' 
+      const text = new Text(s.stepCount.toString(), {
+        fontSize: 20,
+        fill: '#fff',
+        fontFamily: DEFAULT_FONT_FAMILY,
+        fontWeight: 'bold',
+        originX: 'center',
+        originY: 'center'
       });
       const group = new Group([circle, text], { left: x - radius, top: y - radius, selectable: true });
       c.add(group);
@@ -299,7 +314,7 @@ export const useFabric = () => {
       }
 
       if (tool === 'select' || tool === 'pen') return;
-      
+
       const pointer = options.scenePoint || options.pointer || canvas.getPointer(options.e);
       state.isMouseDown = true;
       state.startPoint = { x: pointer.x, y: pointer.y };
@@ -357,6 +372,10 @@ export const useFabric = () => {
           top: pointer.y,
           fontSize: 24,
           fill: hexToRgba(settings.color, settings.strokeOpacity),
+          fontFamily: DEFAULT_FONT_FAMILY,
+          fontWeight: settings.fontWeight,
+          fontStyle: settings.fontStyle,
+          underline: settings.underline,
           opacity: 1,
         });
         canvas.add(t);
@@ -366,7 +385,7 @@ export const useFabric = () => {
       } else if (tool === 'step') {
         createStepInternal(canvas, pointer.x, pointer.y);
       }
-      
+
       canvas.requestRenderAll();
     };
 
@@ -417,7 +436,7 @@ export const useFabric = () => {
         }
         saveHistory();
       }
-      
+
       state.currentObject = null;
       state.currentHead = null;
       canvas.requestRenderAll();
@@ -433,15 +452,15 @@ export const useFabric = () => {
       newZoom *= 0.999 ** delta;
       if (newZoom > 20) newZoom = 20;
       if (newZoom < 0.1) newZoom = 0.1;
-      
+
       const base = stateRef.current.baseSize;
       canvas.setDimensions({
         width: base.width * newZoom,
         height: base.height * newZoom
       });
-      
+
       canvas.setZoom(newZoom);
-      
+
       opt.e.preventDefault();
       opt.e.stopPropagation();
       setZoom(newZoom);
@@ -456,14 +475,13 @@ export const useFabric = () => {
 
       if (selected instanceof Rect) {
         tool = 'rectangle';
-        updates.angle = selected.angle;
         updates.color = selected.stroke as string;
         updates.strokeWidth = selected.strokeWidth;
         const dash = selected.strokeDashArray;
         if (!dash) updates.strokeStyle = 'solid';
         else if (dash[0] === 0.1 || dash[0] === 0) updates.strokeStyle = 'dotted';
         else updates.strokeStyle = 'dashed';
-        
+
         const stroke = selected.stroke as string;
         if (stroke && stroke.startsWith('rgba')) {
           const match = stroke.match(/rgba\((\d+),\s*(\d+),\s*(\d+),\s*([\d.]+)\)/);
@@ -477,7 +495,7 @@ export const useFabric = () => {
         } else {
           updates.strokeOpacity = selected.opacity; // fallback
         }
-        
+
         const fill = selected.fill as string;
         if (fill && fill.startsWith('rgba')) {
           const match = fill.match(/rgba\((\d+),\s*(\d+),\s*(\d+),\s*([\d.]+)\)/);
@@ -497,7 +515,9 @@ export const useFabric = () => {
         }
       } else if (selected instanceof IText || selected instanceof Text) {
         tool = 'text';
-        updates.angle = selected.angle;
+        updates.fontWeight = selected.fontWeight;
+        updates.fontStyle = selected.fontStyle;
+        updates.underline = selected.underline;
         const fill = selected.fill as string;
         if (fill && fill.startsWith('rgba')) {
           const match = fill.match(/rgba\((\d+),\s*(\d+),\s*(\d+),\s*([\d.]+)\)/);
@@ -516,10 +536,9 @@ export const useFabric = () => {
         const children = selected.getObjects();
         const isArrow = children.some(c => c instanceof Triangle);
         const isStep = children.some(c => c instanceof Circle);
-        updates.angle = selected.angle;
-        
         if (isArrow) {
           tool = 'arrow';
+          updates.angle = selected.angle;
           const line = children.find(c => c instanceof Line) as Line;
           if (line) {
             const stroke = line.stroke as string;
@@ -564,7 +583,6 @@ export const useFabric = () => {
         }
       } else if (selected.type === 'path') {
         tool = 'pen';
-        updates.angle = selected.angle;
         const stroke = selected.stroke as string;
         if (stroke && stroke.startsWith('rgba')) {
           const match = stroke.match(/rgba\((\d+),\s*(\d+),\s*(\d+),\s*([\d.]+)\)/);
@@ -616,12 +634,12 @@ export const useFabric = () => {
       const r = parseInt(settings.color.slice(1, 3), 16);
       const g = parseInt(settings.color.slice(3, 5), 16);
       const b = parseInt(settings.color.slice(5, 7), 16);
-      options.path.set({ 
+      options.path.set({
         stroke: `rgba(${r}, ${g}, ${b}, ${settings.strokeOpacity})`,
         strokeDashArray: getDashArray(settings.strokeStyle, settings.strokeWidth),
         strokeLineCap: 'round',
         strokeLineJoin: 'round',
-        opacity: 1 
+        opacity: 1
       });
       saveHistory();
     });
@@ -641,17 +659,17 @@ export const useFabric = () => {
             const scale = Math.min(maxWidth / img.width!, maxHeight / img.height!, 1);
             img.scale(scale);
             img.set({ left: 0, top: 0, originX: 'left', originY: 'top' });
-            
+
             const scaledWidth = img.getScaledWidth();
             const scaledHeight = img.getScaledHeight();
             stateRef.current.baseSize = { width: scaledWidth, height: scaledHeight };
-            
-            canvas.setDimensions({ 
-              width: scaledWidth * zoom, 
-              height: scaledHeight * zoom 
+
+            canvas.setDimensions({
+              width: scaledWidth * zoom,
+              height: scaledHeight * zoom
             });
             canvas.setZoom(zoom);
-            
+
             canvas.backgroundImage = img;
             canvas.requestRenderAll();
             setHasImage(true);
@@ -733,7 +751,7 @@ export const useFabric = () => {
     const canvas = fabricCanvas.current;
     const newZoom = Math.min(canvas.getZoom() * 1.1, 20);
     const base = stateRef.current.baseSize;
-    
+
     canvas.setDimensions({
       width: base.width * newZoom,
       height: base.height * newZoom
@@ -747,7 +765,7 @@ export const useFabric = () => {
     const canvas = fabricCanvas.current;
     const newZoom = Math.max(canvas.getZoom() / 1.1, 0.1);
     const base = stateRef.current.baseSize;
-    
+
     canvas.setDimensions({
       width: base.width * newZoom,
       height: base.height * newZoom
@@ -760,7 +778,7 @@ export const useFabric = () => {
     if (!fabricCanvas.current) return;
     const canvas = fabricCanvas.current;
     const base = stateRef.current.baseSize;
-    
+
     canvas.setDimensions({
       width: base.width,
       height: base.height
@@ -770,15 +788,15 @@ export const useFabric = () => {
     setZoom(1);
   }, []);
 
-  return { 
-    canvasRef, 
-    fabricCanvas, 
-    activeTool, 
-    setActiveTool, 
+  return {
+    canvasRef,
+    fabricCanvas,
+    activeTool,
+    setActiveTool,
     toolSettings,
     updateToolSetting,
-    clearCanvas, 
-    deleteSelected, 
+    clearCanvas,
+    deleteSelected,
     stepCount,
     undo,
     redo,
