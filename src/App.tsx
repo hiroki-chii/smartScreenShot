@@ -55,6 +55,15 @@ const STROKE_STYLES = [
   { label: 'Dotted', value: 'dotted' },
 ];
 
+const TOOL_LABELS: Record<ToolType, string> = {
+  select: 'Select',
+  rectangle: 'Rectangle',
+  arrow: 'Arrow',
+  text: 'Text',
+  step: 'Step',
+  pen: 'Pen'
+};
+
 const hexToRgba = (hex: string, opacity: number) => {
   if (!hex || hex === 'transparent') return 'transparent';
   if (hex.startsWith('rgba')) return hex;
@@ -115,6 +124,12 @@ const ToolSettingsPanel = ({
 
   return (
     <div className="flex flex-col gap-6 p-6 w-72 bg-card/95 backdrop-blur-xl border border-border/50 rounded-2xl shadow-2xl animate-in fade-in zoom-in duration-200">
+      <div className="flex items-center justify-between border-b border-border/50 pb-2 -mb-2">
+        <h3 className="text-xs font-black tracking-[0.2em] text-foreground/80 uppercase">
+          {TOOL_LABELS[tool]}
+        </h3>
+      </div>
+
       {/* Stroke / Color Section */}
       <div className="space-y-5">
         <div className="space-y-3">
