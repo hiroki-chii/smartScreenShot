@@ -13,6 +13,9 @@ export interface ToolSettings {
   angle: number;
   underline: boolean;
   fontSize: number;
+  fontWeight?: string;
+  fontStyle?: string;
+  lineMode?: boolean;
 }
 
 const getDashArray = (style: string, width: number) => {
@@ -24,7 +27,7 @@ const getDashArray = (style: string, width: number) => {
 const hexToRgba = (hex: string, opacity: number) => {
   if (!hex || hex === 'transparent') return 'transparent';
   if (hex.startsWith('rgba')) {
-    return hex.replace(/[\d.]+\)$/g, `${opacity})`);
+    return hex.replace(/rgba\((\d+),\s*(\d+),\s*(\d+),\s*[\d.]+\)/, `rgba($1, $2, $3, ${opacity})`);
   }
   if (!hex.startsWith('#')) return hex;
   const r = parseInt(hex.slice(1, 3), 16);
@@ -41,23 +44,23 @@ export const useFabric = () => {
 
   const [activeTool, _setActiveTool] = useState<ToolType>('select');
   const [toolSettings, setToolSettings] = useState<Record<ToolType, ToolSettings>>({
-    select: { color: '#ff0000', fillColor: 'transparent', strokeOpacity: 1, fillOpacity: 0, strokeWidth: 4, strokeStyle: 'solid', angle: 0, fontWeight: 'normal', fontStyle: 'normal', underline: false, fontSize: 24 },
-    rectangle: { color: '#ff0000', fillColor: 'transparent', strokeOpacity: 1, fillOpacity: 0, strokeWidth: 4, strokeStyle: 'solid', angle: 0, fontWeight: 'normal', fontStyle: 'normal', underline: false, fontSize: 24 },
-    arrow: { color: '#ff0000', fillColor: '#ff0000', strokeOpacity: 1, fillOpacity: 1, strokeWidth: 4, strokeStyle: 'solid', angle: 0, fontWeight: 'normal', fontStyle: 'normal', underline: false, fontSize: 24 },
-    text: { color: '#ff0000', fillColor: '#ff0000', strokeOpacity: 1, fillOpacity: 1, strokeWidth: 0, strokeStyle: 'solid', angle: 0, fontWeight: 'normal', fontStyle: 'normal', underline: false, fontSize: 24 },
-    step: { color: '#ff0000', fillColor: '#ff0000', strokeOpacity: 1, fillOpacity: 1, strokeWidth: 0, strokeStyle: 'solid', angle: 0, fontWeight: 'bold', fontStyle: 'normal', underline: false, fontSize: 20 },
-    pen: { color: '#ff0000', fillColor: 'transparent', strokeOpacity: 1, fillOpacity: 0, strokeWidth: 4, strokeStyle: 'solid', angle: 0, fontWeight: 'normal', fontStyle: 'normal', underline: false, fontSize: 24 },
+    select: { color: '#ff0000', fillColor: 'transparent', strokeOpacity: 1, fillOpacity: 0, strokeWidth: 4, strokeStyle: 'solid', angle: 0, fontWeight: 'normal', fontStyle: 'normal', underline: false, fontSize: 24, lineMode: false },
+    rectangle: { color: '#ff0000', fillColor: 'transparent', strokeOpacity: 1, fillOpacity: 0, strokeWidth: 4, strokeStyle: 'solid', angle: 0, fontWeight: 'normal', fontStyle: 'normal', underline: false, fontSize: 24, lineMode: false },
+    arrow: { color: '#ff0000', fillColor: '#ff0000', strokeOpacity: 1, fillOpacity: 1, strokeWidth: 4, strokeStyle: 'solid', angle: 0, fontWeight: 'normal', fontStyle: 'normal', underline: false, fontSize: 24, lineMode: false },
+    text: { color: '#ff0000', fillColor: '#ff0000', strokeOpacity: 1, fillOpacity: 1, strokeWidth: 0, strokeStyle: 'solid', angle: 0, fontWeight: 'normal', fontStyle: 'normal', underline: false, fontSize: 24, lineMode: false },
+    step: { color: '#ff0000', fillColor: '#ff0000', strokeOpacity: 1, fillOpacity: 1, strokeWidth: 0, strokeStyle: 'solid', angle: 0, fontWeight: 'bold', fontStyle: 'normal', underline: false, fontSize: 20, lineMode: false },
+    pen: { color: '#ff0000', fillColor: 'transparent', strokeOpacity: 1, fillOpacity: 0, strokeWidth: 4, strokeStyle: 'solid', angle: 0, fontWeight: 'normal', fontStyle: 'normal', underline: false, fontSize: 24, lineMode: false },
   });
 
   const stateRef = useRef({
     activeTool: 'select' as ToolType,
     toolSettings: {
-      select: { color: '#ff0000', fillColor: 'transparent', strokeOpacity: 1, fillOpacity: 0, strokeWidth: 4, strokeStyle: 'solid', angle: 0, fontWeight: 'normal', fontStyle: 'normal', underline: false, fontSize: 24 },
-      rectangle: { color: '#ff0000', fillColor: 'transparent', strokeOpacity: 1, fillOpacity: 0, strokeWidth: 4, strokeStyle: 'solid', angle: 0, fontWeight: 'normal', fontStyle: 'normal', underline: false, fontSize: 24 },
-      arrow: { color: '#ff0000', fillColor: '#ff0000', strokeOpacity: 1, fillOpacity: 1, strokeWidth: 4, strokeStyle: 'solid', angle: 0, fontWeight: 'normal', fontStyle: 'normal', underline: false, fontSize: 24 },
-      text: { color: '#ff0000', fillColor: '#ff0000', strokeOpacity: 1, fillOpacity: 1, strokeWidth: 0, strokeStyle: 'solid', angle: 0, fontWeight: 'normal', fontStyle: 'normal', underline: false, fontSize: 24 },
-      step: { color: '#ff0000', fillColor: '#ff0000', strokeOpacity: 1, fillOpacity: 1, strokeWidth: 0, strokeStyle: 'solid', angle: 0, fontWeight: 'bold', fontStyle: 'normal', underline: false, fontSize: 20 },
-      pen: { color: '#ff0000', fillColor: 'transparent', strokeOpacity: 1, fillOpacity: 0, strokeWidth: 4, strokeStyle: 'solid', angle: 0, fontWeight: 'normal', fontStyle: 'normal', underline: false, fontSize: 24 },
+      select: { color: '#ff0000', fillColor: 'transparent', strokeOpacity: 1, fillOpacity: 0, strokeWidth: 4, strokeStyle: 'solid', angle: 0, fontWeight: 'normal', fontStyle: 'normal', underline: false, fontSize: 24, lineMode: false },
+      rectangle: { color: '#ff0000', fillColor: 'transparent', strokeOpacity: 1, fillOpacity: 0, strokeWidth: 4, strokeStyle: 'solid', angle: 0, fontWeight: 'normal', fontStyle: 'normal', underline: false, fontSize: 24, lineMode: false },
+      arrow: { color: '#ff0000', fillColor: '#ff0000', strokeOpacity: 1, fillOpacity: 1, strokeWidth: 4, strokeStyle: 'solid', angle: 0, fontWeight: 'normal', fontStyle: 'normal', underline: false, fontSize: 24, lineMode: false },
+      text: { color: '#ff0000', fillColor: '#ff0000', strokeOpacity: 1, fillOpacity: 1, strokeWidth: 0, strokeStyle: 'solid', angle: 0, fontWeight: 'normal', fontStyle: 'normal', underline: false, fontSize: 24, lineMode: false },
+      step: { color: '#ff0000', fillColor: '#ff0000', strokeOpacity: 1, fillOpacity: 1, strokeWidth: 0, strokeStyle: 'solid', angle: 0, fontWeight: 'bold', fontStyle: 'normal', underline: false, fontSize: 20, lineMode: false },
+      pen: { color: '#ff0000', fillColor: 'transparent', strokeOpacity: 1, fillOpacity: 0, strokeWidth: 4, strokeStyle: 'solid', angle: 0, fontWeight: 'normal', fontStyle: 'normal', underline: false, fontSize: 24, lineMode: false },
     } as Record<ToolType, ToolSettings>,
     stepCount: 1,
     isMouseDown: false,
@@ -141,18 +144,14 @@ export const useFabric = () => {
       canvas.defaultCursor = (tool === 'select') ? 'default' : 'crosshair';
 
       // ペンツールの切り替え
-      canvas.isDrawingMode = (tool === 'pen');
+      const penSettings = stateRef.current.toolSettings.pen;
+      canvas.isDrawingMode = (tool === 'pen' && !penSettings.lineMode);
+      
       if (canvas.isDrawingMode) {
-        const settings = stateRef.current.toolSettings.pen;
         canvas.freeDrawingBrush = new PencilBrush(canvas);
-        canvas.freeDrawingBrush.color = settings.color;
-        canvas.freeDrawingBrush.width = settings.strokeWidth;
-        canvas.freeDrawingBrush.strokeDashArray = getDashArray(settings.strokeStyle, settings.strokeWidth);
-        // 不透明度の反映
-        const r = parseInt(settings.color.slice(1, 3), 16);
-        const g = parseInt(settings.color.slice(3, 5), 16);
-        const b = parseInt(settings.color.slice(5, 7), 16);
-        canvas.freeDrawingBrush.color = `rgba(${r}, ${g}, ${b}, ${settings.strokeOpacity})`;
+        canvas.freeDrawingBrush.color = hexToRgba(penSettings.color, penSettings.strokeOpacity);
+        canvas.freeDrawingBrush.width = penSettings.strokeWidth;
+        canvas.freeDrawingBrush.strokeDashArray = getDashArray(penSettings.strokeStyle, penSettings.strokeWidth);
       }
     }
   }, []);
@@ -166,12 +165,19 @@ export const useFabric = () => {
       stateRef.current.toolSettings = newSettings;
 
       // アクティブなツールがペンで、その設定が更新された場合はブラシに即座に反映
-      if (stateRef.current.activeTool === 'pen' && tool === 'pen' && fabricCanvas.current?.isDrawingMode) {
+      if (stateRef.current.activeTool === 'pen' && tool === 'pen' && fabricCanvas.current) {
         const penSettings = newSettings.pen;
-        const brush = fabricCanvas.current.freeDrawingBrush!;
-        brush.width = penSettings.strokeWidth;
-        brush.color = hexToRgba(penSettings.color, penSettings.strokeOpacity);
-        brush.strokeDashArray = getDashArray(penSettings.strokeStyle, penSettings.strokeWidth);
+        fabricCanvas.current.isDrawingMode = !penSettings.lineMode;
+        
+        if (fabricCanvas.current.isDrawingMode) {
+          if (!fabricCanvas.current.freeDrawingBrush) {
+            fabricCanvas.current.freeDrawingBrush = new PencilBrush(fabricCanvas.current);
+          }
+          const brush = fabricCanvas.current.freeDrawingBrush!;
+          brush.width = penSettings.strokeWidth;
+          brush.color = hexToRgba(penSettings.color, penSettings.strokeOpacity);
+          brush.strokeDashArray = getDashArray(penSettings.strokeStyle, penSettings.strokeWidth);
+        }
       }
 
       // 選択中のオブジェクトがあれば、そのプロパティも更新
@@ -191,11 +197,11 @@ export const useFabric = () => {
             else if (obj instanceof Group) {
               obj.set({ opacity: 1 });
               obj.getObjects().forEach(child => {
-                if (child instanceof Line) child.set({ stroke: strokeColor });
+                if (child.type === 'line') child.set({ stroke: strokeColor });
                 else if (child instanceof Triangle) child.set({ fill: strokeColor });
                 else if (child instanceof Circle) child.set({ fill: strokeColor });
               });
-            } else if (obj.type === 'path') obj.set({ stroke: strokeColor, opacity: 1 });
+            } else if (obj.type === 'path' || obj.type === 'line') obj.set({ stroke: strokeColor, opacity: 1 });
           }
 
           if (updates.fillColor || updates.fillOpacity !== undefined) {
@@ -212,7 +218,7 @@ export const useFabric = () => {
           if (updates.strokeWidth !== undefined || updates.strokeStyle !== undefined) {
             modified = true;
             const dashArray = getDashArray(s.strokeStyle, s.strokeWidth);
-            if (obj instanceof Rect || obj.type === 'path') {
+            if (obj instanceof Rect || obj.type === 'path' || obj.type === 'line') {
               obj.set({
                 strokeWidth: s.strokeWidth,
                 strokeDashArray: dashArray,
@@ -328,13 +334,13 @@ export const useFabric = () => {
         return;
       }
 
-      if (tool === 'select' || tool === 'pen') return;
+      const settings = state.toolSettings[tool];
+
+      if (tool === 'select' || (tool === 'pen' && !settings.lineMode)) return;
 
       const pointer = options.scenePoint || options.pointer || canvas.getPointer(options.e);
       state.isMouseDown = true;
       state.startPoint = { x: pointer.x, y: pointer.y };
-
-      const settings = state.toolSettings[tool];
 
       if (tool === 'rectangle') {
         const rect = new Rect({
@@ -356,31 +362,38 @@ export const useFabric = () => {
         });
         canvas.add(rect);
         state.currentObject = rect;
-      } else if (tool === 'arrow') {
+      } else if (tool === 'arrow' || (tool === 'pen' && settings.lineMode)) {
         const dashArray = getDashArray(settings.strokeStyle, settings.strokeWidth);
         const line = new Line([pointer.x, pointer.y, pointer.x, pointer.y], {
           stroke: hexToRgba(settings.color, settings.strokeOpacity),
           strokeWidth: settings.strokeWidth,
           strokeDashArray: dashArray,
           strokeLineCap: 'round',
+          strokeUniform: true,
           opacity: 1,
           selectable: false,
           evented: false,
         });
-        const head = new Triangle({
-          width: settings.strokeWidth * 2 + 7,
-          height: settings.strokeWidth * 2 + 7,
-          fill: hexToRgba(settings.color, settings.strokeOpacity),
-          opacity: 1,
-          originX: 'center',
-          originY: 'center',
-          selectable: false,
-          visible: false,
-          evented: false,
-        });
-        canvas.add(line, head);
-        state.currentObject = line;
-        state.currentHead = head;
+
+        if (tool === 'arrow') {
+          const head = new Triangle({
+            width: settings.strokeWidth * 2 + 7,
+            height: settings.strokeWidth * 2 + 7,
+            fill: hexToRgba(settings.color, settings.strokeOpacity),
+            opacity: 1,
+            originX: 'center',
+            originY: 'center',
+            selectable: false,
+            visible: false,
+            evented: false,
+          });
+          canvas.add(line, head);
+          state.currentObject = line;
+          state.currentHead = head;
+        } else {
+          canvas.add(line);
+          state.currentObject = line;
+        }
       } else if (tool === 'text') {
         const t = new IText('Input Text', {
           left: pointer.x,
@@ -416,17 +429,21 @@ export const useFabric = () => {
         const width = Math.abs(pointer.x - state.startPoint.x);
         const height = Math.abs(pointer.y - state.startPoint.y);
         state.currentObject.set({ left, top, width, height });
-      } else if (tool === 'arrow') {
-        const line = state.currentObject as Line;
-        line.set({ x2: pointer.x, y2: pointer.y });
-        if (state.currentHead) {
-          const angle = Math.atan2(pointer.y - state.startPoint.y, pointer.x - state.startPoint.x) * 180 / Math.PI;
-          state.currentHead.set({
-            left: pointer.x,
-            top: pointer.y,
-            angle: angle + 90,
-            visible: true
-          });
+      } else if (tool === 'arrow' || tool === 'pen') {
+        const line = state.currentObject;
+        if (line && line.type === 'line') {
+          line.set({ x2: pointer.x, y2: pointer.y });
+          line.setCoords();
+          if (tool === 'arrow' && state.currentHead) {
+            const angle = Math.atan2(pointer.y - state.startPoint.y, pointer.x - state.startPoint.x) * 180 / Math.PI;
+            state.currentHead.set({
+              left: pointer.x,
+              top: pointer.y,
+              angle: angle + 90,
+              visible: true
+            });
+            state.currentHead.setCoords();
+          }
         }
       }
       canvas.requestRenderAll();
@@ -447,6 +464,7 @@ export const useFabric = () => {
           canvas.setActiveObject(group);
         } else {
           state.currentObject.set({ selectable: true, evented: true });
+          if (state.currentObject.setCoords) state.currentObject.setCoords();
           canvas.setActiveObject(state.currentObject);
         }
         saveHistory();
@@ -555,7 +573,7 @@ export const useFabric = () => {
         if (isArrow) {
           tool = 'arrow';
           updates.angle = selected.angle;
-          const line = children.find(c => c instanceof Line) as Line;
+          const line = children.find(c => c.type === 'line');
           if (line) {
             const stroke = line.stroke as string;
             if (stroke && stroke.startsWith('rgba')) {
@@ -598,7 +616,9 @@ export const useFabric = () => {
             updates.fontSize = circle.radius * 1.1; // Estimate fontSize from radius for steps
           }
         }
-      } else if (selected.type === 'path') {
+      } else if (selected.type === 'path' || selected.type === 'line') {
+        // Line の場合は、ペンツールの直線モードかアローツールのいずれか
+        // ただし、アローは Group になっているので、ここに来る Line は通常ペンツールの直線
         tool = 'pen';
         const stroke = selected.stroke as string;
         if (stroke && stroke.startsWith('rgba')) {
@@ -619,6 +639,12 @@ export const useFabric = () => {
         if (!dash) updates.strokeStyle = 'solid';
         else if (dash[0] === 0.1 || dash[0] === 0) updates.strokeStyle = 'dotted';
         else updates.strokeStyle = 'dashed';
+        
+        if (selected.type === 'line') {
+          updates.lineMode = true;
+        } else {
+          updates.lineMode = false;
+        }
       }
 
       if (tool) {

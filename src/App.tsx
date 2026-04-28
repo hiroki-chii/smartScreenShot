@@ -292,6 +292,31 @@ const ToolSettingsPanel = ({
           </div>
         </div>
       )}
+
+      {/* Pen Mode Section (Pen only) */}
+      {tool === 'pen' && (
+        <div className="space-y-4 border-t border-border/50 pt-5">
+          <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Drawing Mode</label>
+          <div className="flex gap-2">
+            <Button
+              variant={!settings.lineMode ? "default" : "outline"}
+              size="sm"
+              className="flex-1 h-8 text-[10px] uppercase font-bold tracking-tight"
+              onClick={() => onUpdate(tool, { lineMode: false })}
+            >
+              Freehand
+            </Button>
+            <Button
+              variant={settings.lineMode ? "default" : "outline"}
+              size="sm"
+              className="flex-1 h-8 text-[10px] uppercase font-bold tracking-tight"
+              onClick={() => onUpdate(tool, { lineMode: true })}
+            >
+              Straight
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
