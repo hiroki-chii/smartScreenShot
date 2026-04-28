@@ -433,15 +433,56 @@ export const useFabric = () => {
       } else if (tool === 'arrow' || tool === 'pen') {
         const line = state.currentObject;
         if (line && line.type === 'line') {
-          line.set({ x2: pointer.x, y2: pointer.y });
+          const startX = state.startPoint.x;
+          const startY = state.startPoint.y;
+          let targetX = pointer.x;
+          let targetY = pointer.y;
+
+          // 描画中のスナップ処理
+          const angleRad = Math.atan2(targetY - startY, targetX - startX);
+          let angleDeg = (angleRad * 180 / Math.PI + 360) % 360;
+          
+          const snapAngles = [0, 45, 90, 135, 180, 225, 270, 315, 360];
+          const snapThreshold = 5; // マウス描画時は少し広めにスナップ
+          let snapped = false;
+          let bestSnapAngle = angleDeg;
+
+          for (const snap of snapAngles) {
+            if (Math.abs(angleDeg - snap) <= snapThreshold) {
+              bestSnapAngle = snap % 360;
+              snapped = true;
+              break;
+            }
+          }
+
+          if (snapped) {
+            const dist = Math.sqrt(Math.pow(targetX - startX, 2) + Math.pow(targetY - startY, 2));
+            const snapRad = bestSnapAngle * Math.PI / 180;
+            targetX = startX + dist * Math.cos(snapRad);
+            targetY = startY + dist * Math.sin(snapRad);
+            
+            // スナップ時の視覚効果（緑色に一時的に変更）
+            line.set({ stroke: '#22c55e', strokeWidth: state.toolSettings[tool].strokeWidth * 1.5 });
+          } else {
+            // 通常時の色に戻す
+            const settings = state.toolSettings[tool];
+            line.set({ 
+              stroke: hexToRgba(settings.color, settings.strokeOpacity),
+              strokeWidth: settings.strokeWidth 
+            });
+          }
+
+          line.set({ x2: targetX, y2: targetY });
           line.setCoords();
+
           if (tool === 'arrow' && state.currentHead) {
-            const angle = Math.atan2(pointer.y - state.startPoint.y, pointer.x - state.startPoint.x) * 180 / Math.PI;
+            const currentAngle = Math.atan2(targetY - startY, targetX - startX) * 180 / Math.PI;
             state.currentHead.set({
-              left: pointer.x,
-              top: pointer.y,
-              angle: angle + 90,
-              visible: true
+              left: targetX,
+              top: targetY,
+              angle: currentAngle + 90,
+              visible: true,
+              fill: snapped ? '#22c55e' : hexToRgba(state.toolSettings.arrow.color, state.toolSettings.arrow.strokeOpacity)
             });
             state.currentHead.setCoords();
           }
@@ -456,7 +497,22 @@ export const useFabric = () => {
       state.isMouseDown = false;
 
       if (state.currentObject) {
+        // スナップ時の視覚効果（緑色）をリセットして元の設定に戻す
+        const tool = state.activeTool;
+        const settings = state.toolSettings[tool];
+        
+        if (state.currentObject.type === 'line') {
+          state.currentObject.set({
+            stroke: hexToRgba(settings.color, settings.strokeOpacity),
+            strokeWidth: settings.strokeWidth
+          });
+        }
+
         if (state.activeTool === 'arrow' && state.currentHead) {
+          state.currentHead.set({
+            fill: hexToRgba(settings.color, settings.strokeOpacity)
+          });
+          
           const line = state.currentObject as Line;
           const head = state.currentHead;
           canvas.remove(line, head);
@@ -835,6 +891,55 @@ export const useFabric = () => {
                 newAngle -= step;
               } else {
                 newAngle += step;
+              }
+              
+              // 0-359の範囲に正規化
+              newAngle = (newAngle % 360 + 360) % 360;
+              
+              // スナップポイント (垂直、水平、45度)
+              const snapAngles = [0, 45, 90, 135, 180, 225, 270, 315];
+              const snapThreshold = 2.1; // スナップする閾値
+              
+              let snapped = false;
+              for (const snapAngle of snapAngles) {
+                // 角度間の最短距離を計算
+                const getDist = (a: number, b: number) => {
+                  const d = Math.abs(a - b) % 360;
+                  return d > 180 ? 360 - d : d;
+                };
+
+                const distNew = getDist(newAngle, snapAngle);
+                const distCurrent = getDist(currentAngle, snapAngle);
+
+                // 閾値以内、かつスナップポイントに近づいている場合のみ吸着する
+                // これにより、すでにスナップしている状態から離れる方向への移動を許可する
+                if (distNew <= snapThreshold && distNew < distCurrent) {
+                  newAngle = snapAngle;
+                  snapped = true;
+                  break;
+                }
+                
+                // すでにスナップポイント上にいる場合も視覚効果を表示
+                if (distCurrent < 0.1) {
+                  snapped = true;
+                }
+              }
+              
+              // 視覚効果の適用
+              if (snapped) {
+                obj.set({
+                  borderColor: '#22c55e', // 鮮やかな緑
+                  borderScaleFactor: 2.5,
+                  cornerColor: '#22c55e',
+                  cornerStrokeColor: '#ffffff'
+                });
+              } else {
+                obj.set({
+                  borderColor: '#3b82f6', // 青
+                  borderScaleFactor: 1,
+                  cornerColor: '#ffffff',
+                  cornerStrokeColor: '#3b82f6'
+                });
               }
               
               obj.set('angle', newAngle);
