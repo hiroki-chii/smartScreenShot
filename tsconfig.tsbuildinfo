@@ -1,0 +1,1 @@
+{"root":["./src/app.tsx","./src/main.tsx","./src/vite-env.d.ts","./src/components/ui/button.tsx","./src/components/ui/card.tsx","./src/components/ui/dropdown-menu.tsx","./src/components/ui/popover.tsx","./src/components/ui/slider.tsx","./src/components/ui/tooltip.tsx","./src/hooks/usefabric.ts","./src/lib/utils.ts"],"version":"6.0.3"}

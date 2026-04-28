@@ -114,11 +114,15 @@ const ColorGrid = ({
 const ToolSettingsPanel = ({ 
   tool, 
   settings, 
-  onUpdate 
+  onUpdate,
+  stepCount,
+  onUpdateStepCount
 }: { 
   tool: ToolType, 
   settings: ToolSettings, 
-  onUpdate: (tool: ToolType, updates: Partial<ToolSettings>) => void 
+  onUpdate: (tool: ToolType, updates: Partial<ToolSettings>) => void,
+  stepCount?: number,
+  onUpdateStepCount?: (count: number) => void
 }) => {
   const isShape = tool === 'rectangle' || tool === 'arrow' || tool === 'pen';
 
@@ -274,7 +278,24 @@ const ToolSettingsPanel = ({
         </div>
       )}
 
-
+      {/* Step Number Section */}
+      {tool === 'step' && stepCount !== undefined && onUpdateStepCount && (
+        <div className="space-y-4 border-t border-border/50 pt-5">
+          <div className="flex justify-between items-center">
+            <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Next Step Number</label>
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                min="1"
+                value={stepCount}
+                onChange={(e) => onUpdateStepCount(Math.max(1, parseInt(e.target.value) || 1))}
+                className="w-16 h-8 bg-muted/50 border border-border/50 rounded-lg px-2 text-xs font-mono font-bold focus:outline-none focus:ring-1 focus:ring-red-500 transition-all"
+              />
+              <span className="text-[10px] font-bold text-muted-foreground">#</span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Pen Mode Section (Pen only) */}
       {tool === 'pen' && (
@@ -314,7 +335,9 @@ const ToolbarButton = ({
   settings,
   onUpdateSettings,
   isOpen,
-  onOpenChange
+  onOpenChange,
+  stepCount,
+  onUpdateStepCount
 }: { 
   icon: any, 
   label: string, 
@@ -325,7 +348,9 @@ const ToolbarButton = ({
   settings?: ToolSettings,
   onUpdateSettings?: (tool: ToolType, updates: Partial<ToolSettings>) => void,
   isOpen?: boolean,
-  onOpenChange?: (open: boolean) => void
+  onOpenChange?: (open: boolean) => void,
+  stepCount?: number,
+  onUpdateStepCount?: (count: number) => void
 }) => {
   return (
     <Popover open={isOpen} onOpenChange={onOpenChange}>
@@ -376,7 +401,9 @@ const ToolbarButton = ({
           <ToolSettingsPanel 
             tool={toolType} 
             settings={settings} 
-            onUpdate={onUpdateSettings} 
+            onUpdate={onUpdateSettings}
+            stepCount={stepCount}
+            onUpdateStepCount={onUpdateStepCount}
           />
         </PopoverContent>
       )}
@@ -403,7 +430,9 @@ function App() {
     zoom,
     zoomIn,
     zoomOut,
-    resetZoom
+    resetZoom,
+    stepCount,
+    setStepCount
   } = useFabric();
   
   const [theme, setTheme] = React.useState<'light' | 'dark' | 'system'>(
@@ -457,7 +486,8 @@ function App() {
     canvas.renderAll();
     
     const dataURL = canvas.toDataURL({
-      format: 'png'
+      format: 'png',
+      multiplier: 1
     });
     
     try {
@@ -549,6 +579,8 @@ function App() {
             onUpdateSettings={updateToolSetting}
             isOpen={openSettingsTool === 'step'}
             onOpenChange={(open) => setOpenSettingsTool(open ? 'step' : null)}
+            stepCount={stepCount}
+            onUpdateStepCount={setStepCount}
           />
           <ToolbarButton 
             icon={Pencil} 

@@ -36,6 +36,28 @@ const hexToRgba = (hex: string, opacity: number) => {
   return `rgba(${r}, ${g}, ${b}, ${opacity})`;
 };
 
+const getContrastColor = (color: string) => {
+  if (!color || color === 'transparent') return '#000000';
+  
+  let r, g, b;
+  if (color.startsWith('#')) {
+    r = parseInt(color.slice(1, 3), 16);
+    g = parseInt(color.slice(3, 5), 16);
+    b = parseInt(color.slice(5, 7), 16);
+  } else if (color.startsWith('rgb')) {
+    const matches = color.match(/\d+/g);
+    if (!matches) return '#000000';
+    r = parseInt(matches[0]);
+    g = parseInt(matches[1]);
+    b = parseInt(matches[2]);
+  } else {
+    return '#000000';
+  }
+  
+  const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+  return brightness > 128 ? '#000000' : '#ffffff';
+};
+
 const DEFAULT_FONT_FAMILY = '"Yu Gothic", "YuGothic", "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Meiryo", sans-serif';
 
 export const useFabric = () => {
@@ -200,7 +222,12 @@ export const useFabric = () => {
               obj.getObjects().forEach(child => {
                 if (child.type === 'line') child.set({ stroke: strokeColor });
                 else if (child instanceof Triangle) child.set({ fill: strokeColor });
-                else if (child instanceof Circle) child.set({ fill: strokeColor });
+                else if (child instanceof Circle) {
+                  child.set({ fill: strokeColor });
+                  // ステップツールの場合はテキストの色も更新
+                  const text = obj.getObjects().find(c => c instanceof Text);
+                  if (text) text.set({ fill: getContrastColor(s.color) });
+                }
               });
             } else if (obj.type === 'path' || obj.type === 'line') obj.set({ stroke: strokeColor, opacity: 1 });
           }
@@ -313,7 +340,7 @@ export const useFabric = () => {
       });
       const text = new Text(s.stepCount.toString(), {
         fontSize: 20,
-        fill: '#fff',
+        fill: getContrastColor(settings.color),
         fontFamily: DEFAULT_FONT_FAMILY,
         fontWeight: 'bold',
         originX: 'center',
@@ -339,7 +366,9 @@ export const useFabric = () => {
 
       if (tool === 'select' || (tool === 'pen' && !settings.lineMode)) return;
 
-      const pointer = options.scenePoint || options.pointer || canvas.getPointer(options.e);
+      const pointer = options.scenePoint;
+      if (!pointer) return;
+
       state.isMouseDown = true;
       state.startPoint = { x: pointer.x, y: pointer.y };
 
@@ -402,8 +431,8 @@ export const useFabric = () => {
           fontSize: settings.fontSize,
           fill: hexToRgba(settings.color, settings.strokeOpacity),
           fontFamily: DEFAULT_FONT_FAMILY,
-          fontWeight: settings.fontWeight,
-          fontStyle: settings.fontStyle,
+          fontWeight: settings.fontWeight as any,
+          fontStyle: settings.fontStyle as any,
           underline: settings.underline,
           opacity: 1,
         });
@@ -421,7 +450,9 @@ export const useFabric = () => {
     const handleMouseMove = (options: TPointerEventInfo) => {
       const state = stateRef.current;
       if (!state.isMouseDown || !state.currentObject) return;
-      const pointer = options.scenePoint || options.pointer || canvas.getPointer(options.e);
+      const pointer = options.scenePoint;
+      if (!pointer) return;
+
       const tool = state.activeTool;
 
       if (tool === 'rectangle') {
@@ -605,8 +636,8 @@ export const useFabric = () => {
         }
       } else if (selected instanceof IText || selected instanceof Text) {
         tool = 'text';
-        updates.fontWeight = selected.fontWeight;
-        updates.fontStyle = selected.fontStyle;
+        updates.fontWeight = selected.fontWeight?.toString();
+        updates.fontStyle = selected.fontStyle as any;
         updates.underline = selected.underline;
         updates.fontSize = selected.fontSize;
         const fill = selected.fill as string;
@@ -1061,6 +1092,11 @@ export const useFabric = () => {
     setZoom(1);
   }, []);
 
+  const setStepCount = useCallback((count: number) => {
+    stateRef.current.stepCount = count;
+    _setStepCount(count);
+  }, []);
+
   return {
     canvasRef,
     fabricCanvas,
@@ -1080,7 +1116,8 @@ export const useFabric = () => {
     zoom,
     zoomIn,
     zoomOut,
-    resetZoom
+    resetZoom,
+    setStepCount
   };
 };
 
