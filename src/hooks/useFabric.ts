@@ -98,6 +98,7 @@ export const useFabric = () => {
   const [canRedo, setCanRedo] = useState(false);
   const [hasImage, setHasImage] = useState(false);
   const [zoom, setZoom] = useState(1);
+  const [hasSelection, setHasSelection] = useState(false);
 
   const history = useRef<string[]>([]);
   const historyIndex = useRef(-1);
@@ -310,6 +311,72 @@ export const useFabric = () => {
     });
   }, [saveHistory]);
 
+  const bringToFront = useCallback(() => {
+    if (!fabricCanvas.current) return;
+    const canvas = fabricCanvas.current;
+    const activeObjects = canvas.getActiveObjects();
+    if (activeObjects.length === 0) return;
+    
+    // 現在のインデックス順にソートして最前面へ
+    activeObjects.sort((a, b) => canvas.getObjects().indexOf(a) - canvas.getObjects().indexOf(b));
+    activeObjects.forEach(obj => {
+      canvas.bringObjectToFront(obj);
+    });
+    canvas.requestRenderAll();
+    saveHistory();
+  }, [saveHistory]);
+
+  const sendToBack = useCallback(() => {
+    if (!fabricCanvas.current) return;
+    const canvas = fabricCanvas.current;
+    const activeObjects = canvas.getActiveObjects();
+    if (activeObjects.length === 0) return;
+    
+    // 現在のインデックスを逆順にソートして最背面へ
+    activeObjects.sort((a, b) => canvas.getObjects().indexOf(b) - canvas.getObjects().indexOf(a));
+    activeObjects.forEach(obj => {
+      canvas.sendObjectToBack(obj);
+    });
+    canvas.requestRenderAll();
+    saveHistory();
+  }, [saveHistory]);
+
+  const bringForward = useCallback(() => {
+    if (!fabricCanvas.current) return;
+    const canvas = fabricCanvas.current;
+    const activeObjects = canvas.getActiveObjects();
+    if (activeObjects.length === 0) return;
+    
+    // インデックスが高い順に処理して前面へ
+    activeObjects.sort((a, b) => canvas.getObjects().indexOf(b) - canvas.getObjects().indexOf(a));
+    activeObjects.forEach(obj => {
+      const currentIndex = canvas.getObjects().indexOf(obj);
+      if (currentIndex < canvas.getObjects().length - 1) {
+        canvas.moveObjectTo(obj, currentIndex + 1);
+      }
+    });
+    canvas.requestRenderAll();
+    saveHistory();
+  }, [saveHistory]);
+
+  const sendBackward = useCallback(() => {
+    if (!fabricCanvas.current) return;
+    const canvas = fabricCanvas.current;
+    const activeObjects = canvas.getActiveObjects();
+    if (activeObjects.length === 0) return;
+    
+    // インデックスが低い順に処理して背面へ
+    activeObjects.sort((a, b) => canvas.getObjects().indexOf(a) - canvas.getObjects().indexOf(b));
+    activeObjects.forEach(obj => {
+      const currentIndex = canvas.getObjects().indexOf(obj);
+      if (currentIndex > 0) {
+        canvas.moveObjectTo(obj, currentIndex - 1);
+      }
+    });
+    canvas.requestRenderAll();
+    saveHistory();
+  }, [saveHistory]);
+
   useEffect(() => {
     if (!canvasRef.current) return;
 
@@ -318,6 +385,7 @@ export const useFabric = () => {
       height: 600,
       backgroundColor: 'transparent',
       selection: false,
+      preserveObjectStacking: true,
     });
     fabricCanvas.current = canvas;
 
@@ -755,9 +823,16 @@ export const useFabric = () => {
     canvas.on('mouse:up', handleMouseUp);
     canvas.on('mouse:wheel', handleMouseWheel);
     canvas.on('object:modified', handleObjectModified);
-    canvas.on('selection:created', handleSelection);
-    canvas.on('selection:updated', handleSelection);
+    canvas.on('selection:created', (e) => {
+      setHasSelection(true);
+      handleSelection(e);
+    });
+    canvas.on('selection:updated', (e) => {
+      setHasSelection(true);
+      handleSelection(e);
+    });
     canvas.on('selection:cleared', () => {
+      setHasSelection(false);
       setActiveTool('select');
     });
     canvas.on('path:created', (options: any) => {
@@ -895,119 +970,150 @@ export const useFabric = () => {
         }
       }
 
+      // レイヤー移動 (Ctrl + ArrowUp/Down, Ctrl + Shift + ArrowUp/Down)
+      if (e.ctrlKey && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
+        const activeObjects = canvas.getActiveObjects();
+        if (activeObjects.length > 0) {
+          e.preventDefault();
+          if (e.shiftKey) {
+            if (e.key === 'ArrowUp') bringToFront();
+            else sendToBack();
+          } else {
+            if (e.key === 'ArrowUp') bringForward();
+            else sendBackward();
+          }
+        }
+      }
+
       // 方向キーによる移動・回転・サイズ変更
-      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key) && !e.ctrlKey && !e.altKey) {
         const activeObjects = canvas.getActiveObjects();
         if (activeObjects.length > 0) {
           e.preventDefault();
           
-          if (e.ctrlKey) {
-            // サイズ変更（スケール調整）
-            const step = e.shiftKey ? 0.1 : 0.01;
-            activeObjects.forEach(obj => {
-              const currentScaleX = obj.scaleX || 1;
-              const currentScaleY = obj.scaleY || 1;
-              let newScaleX = currentScaleX;
-              let newScaleY = currentScaleY;
-              
-              if (e.key === 'ArrowUp' || e.key === 'ArrowRight') {
-                newScaleX += step;
-                newScaleY += step;
-              } else {
-                newScaleX = Math.max(0.01, newScaleX - step);
-                newScaleY = Math.max(0.01, newScaleY - step);
-              }
-              
-              obj.set({ scaleX: newScaleX, scaleY: newScaleY });
-              obj.setCoords();
-            });
-          } else if (e.altKey) {
-            // 回転
-            const step = e.shiftKey ? 15 : 1;
-            activeObjects.forEach(obj => {
-              const currentAngle = obj.angle || 0;
-              let newAngle = currentAngle;
-              
-              if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
-                newAngle -= step;
-              } else {
-                newAngle += step;
-              }
-              
-              // 0-359の範囲に正規化
-              newAngle = (newAngle % 360 + 360) % 360;
-              
-              // スナップポイント (垂直、水平、45度)
-              const snapAngles = [0, 45, 90, 135, 180, 225, 270, 315];
-              const snapThreshold = 2.1; // スナップする閾値
-              
-              let snapped = false;
-              for (const snapAngle of snapAngles) {
-                // 角度間の最短距離を計算
-                const getDist = (a: number, b: number) => {
-                  const d = Math.abs(a - b) % 360;
-                  return d > 180 ? 360 - d : d;
-                };
-
-                const distNew = getDist(newAngle, snapAngle);
-                const distCurrent = getDist(currentAngle, snapAngle);
-
-                // 閾値以内、かつスナップポイントに近づいている場合のみ吸着する
-                // これにより、すでにスナップしている状態から離れる方向への移動を許可する
-                if (distNew <= snapThreshold && distNew < distCurrent) {
-                  newAngle = snapAngle;
-                  snapped = true;
-                  break;
-                }
-                
-                // すでにスナップポイント上にいる場合も視覚効果を表示
-                if (distCurrent < 0.1) {
-                  snapped = true;
-                }
-              }
-              
-              // 視覚効果の適用
-              if (snapped) {
-                obj.set({
-                  borderColor: '#22c55e', // 鮮やかな緑
-                  borderScaleFactor: 2.5,
-                  cornerColor: '#22c55e',
-                  cornerStrokeColor: '#ffffff'
-                });
-              } else {
-                obj.set({
-                  borderColor: '#3b82f6', // 青
-                  borderScaleFactor: 1,
-                  cornerColor: '#ffffff',
-                  cornerStrokeColor: '#3b82f6'
-                });
-              }
-              
-              obj.set('angle', newAngle);
-              obj.setCoords();
-            });
-          } else {
-            // 移動
-            const step = e.shiftKey ? 10 : 1;
-            activeObjects.forEach(obj => {
-              switch (e.key) {
-                case 'ArrowUp':
-                  obj.set('top', obj.top - step);
-                  break;
-                case 'ArrowDown':
-                  obj.set('top', obj.top + step);
-                  break;
-                case 'ArrowLeft':
-                  obj.set('left', obj.left - step);
-                  break;
-                case 'ArrowRight':
-                  obj.set('left', obj.left + step);
-                  break;
-              }
-              obj.setCoords();
-            });
-          }
+          // 移動
+          const step = e.shiftKey ? 10 : 1;
+          activeObjects.forEach(obj => {
+            switch (e.key) {
+              case 'ArrowUp':
+                obj.set('top', obj.top - step);
+                break;
+              case 'ArrowDown':
+                obj.set('top', obj.top + step);
+                break;
+              case 'ArrowLeft':
+                obj.set('left', obj.left - step);
+                break;
+              case 'ArrowRight':
+                obj.set('left', obj.left + step);
+                break;
+            }
+            obj.setCoords();
+          });
           
+          canvas.requestRenderAll();
+          saveHistory();
+        }
+      }
+
+      // Ctrlキー併用でのリサイズ
+      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key) && e.ctrlKey && !e.shiftKey) {
+        const activeObjects = canvas.getActiveObjects();
+        if (activeObjects.length > 0) {
+          e.preventDefault();
+          // サイズ変更（スケール調整）
+          const step = 0.01;
+          activeObjects.forEach(obj => {
+            const currentScaleX = obj.scaleX || 1;
+            const currentScaleY = obj.scaleY || 1;
+            let newScaleX = currentScaleX;
+            let newScaleY = currentScaleY;
+            
+            if (e.key === 'ArrowUp' || e.key === 'ArrowRight') {
+              newScaleX += step;
+              newScaleY += step;
+            } else {
+              newScaleX = Math.max(0.01, newScaleX - step);
+              newScaleY = Math.max(0.01, newScaleY - step);
+            }
+            
+            obj.set({ scaleX: newScaleX, scaleY: newScaleY });
+            obj.setCoords();
+          });
+          canvas.requestRenderAll();
+          saveHistory();
+        }
+      }
+
+      // Altキー併用での回転
+      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key) && e.altKey) {
+        const activeObjects = canvas.getActiveObjects();
+        if (activeObjects.length > 0) {
+          e.preventDefault();
+          // 回転
+          const step = e.shiftKey ? 15 : 1;
+          activeObjects.forEach(obj => {
+            const currentAngle = obj.angle || 0;
+            let newAngle = currentAngle;
+            
+            if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+              newAngle -= step;
+            } else {
+              newAngle += step;
+            }
+            
+            // 0-359の範囲に正規化
+            newAngle = (newAngle % 360 + 360) % 360;
+            
+            // スナップポイント (垂直、水平、45度)
+            const snapAngles = [0, 45, 90, 135, 180, 225, 270, 315];
+            const snapThreshold = 2.1; // スナップする閾値
+            
+            let snapped = false;
+            for (const snapAngle of snapAngles) {
+              // 角度間の最短距離を計算
+              const getDist = (a: number, b: number) => {
+                const d = Math.abs(a - b) % 360;
+                return d > 180 ? 360 - d : d;
+              };
+
+              const distNew = getDist(newAngle, snapAngle);
+              const distCurrent = getDist(currentAngle, snapAngle);
+
+              // 閾値以内、かつスナップポイントに近づいている場合のみ吸着する
+              // これにより、すでにスナップしている状態から離れる方向への移動を許可する
+              if (distNew <= snapThreshold && distNew < distCurrent) {
+                newAngle = snapAngle;
+                snapped = true;
+                break;
+              }
+              
+              // すでにスナップポイント上にいる場合も視覚効果を表示
+              if (distCurrent < 0.1) {
+                snapped = true;
+              }
+            }
+            
+            // 視覚効果の適用
+            if (snapped) {
+              obj.set({
+                borderColor: '#22c55e', // 鮮やかな緑
+                borderScaleFactor: 2.5,
+                cornerColor: '#22c55e',
+                cornerStrokeColor: '#ffffff'
+              });
+            } else {
+              obj.set({
+                borderColor: '#3b82f6', // 青
+                borderScaleFactor: 1,
+                cornerColor: '#ffffff',
+                cornerStrokeColor: '#3b82f6'
+              });
+            }
+            
+            obj.set('angle', newAngle);
+            obj.setCoords();
+          });
           canvas.requestRenderAll();
           saveHistory();
         }
@@ -1117,7 +1223,12 @@ export const useFabric = () => {
     zoomIn,
     zoomOut,
     resetZoom,
-    setStepCount
+    setStepCount,
+    bringToFront,
+    sendToBack,
+    bringForward,
+    sendBackward,
+    hasSelection
   };
 };
 

@@ -21,7 +21,11 @@ import {
   Type as TypeIcon,
   Bold,
   Italic,
-  Underline
+  Underline,
+  BringToFront,
+  SendToBack,
+  ChevronUp,
+  ChevronDown
 } from 'lucide-react';
 
 // Using relative imports for stability
@@ -116,13 +120,20 @@ const ToolSettingsPanel = ({
   settings, 
   onUpdate,
   stepCount,
-  onUpdateStepCount
+  onUpdateStepCount,
+  layerActions
 }: { 
   tool: ToolType, 
   settings: ToolSettings, 
   onUpdate: (tool: ToolType, updates: Partial<ToolSettings>) => void,
   stepCount?: number,
-  onUpdateStepCount?: (count: number) => void
+  onUpdateStepCount?: (count: number) => void,
+  layerActions?: {
+    bringToFront: () => void;
+    sendToBack: () => void;
+    bringForward: () => void;
+    sendBackward: () => void;
+  }
 }) => {
   const isShape = tool === 'rectangle' || tool === 'arrow' || tool === 'pen';
 
@@ -134,72 +145,73 @@ const ToolSettingsPanel = ({
         </h3>
       </div>
 
-      {/* Stroke / Color Section */}
-      <div className="space-y-5">
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-              {tool === 'text' || tool === 'step' ? 'Color' : 'Stroke Color'}
-            </label>
-            <div 
-              className="w-3 h-3 rounded-full shadow-inner border border-border/50" 
-              style={{ backgroundColor: hexToRgba(settings.color, settings.strokeOpacity) }} 
-            />
-          </div>
-          <ColorGrid selected={settings.color} onSelect={(color) => onUpdate(tool, { color })} />
-        </div>
-
-        <div className="space-y-3 pt-1">
-          <div className="flex justify-between items-center">
-            <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-              {tool === 'text' || tool === 'step' ? 'Opacity' : 'Stroke Opacity'}
-            </label>
-            <span className="text-[10px] font-mono font-medium">{Math.round(settings.strokeOpacity * 100)}%</span>
-          </div>
-          <Slider 
-            value={[settings.strokeOpacity * 100]} 
-            max={100} 
-            min={0}
-            step={1} 
-            onValueChange={(v) => onUpdate(tool, { strokeOpacity: v[0] / 100 })} 
-          />
-        </div>
-
-        {isShape && (
-          <>
-            <div className="space-y-3 pt-1">
-              <div className="flex justify-between items-center">
-                <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Stroke Width</label>
-                <span className="text-[10px] font-mono font-medium">{settings.strokeWidth}px</span>
-              </div>
-              <Slider 
-                value={[settings.strokeWidth]} 
-                min={1}
-                max={30} 
-                step={1} 
-                onValueChange={(v) => onUpdate(tool, { strokeWidth: v[0] })} 
+      {tool !== 'select' && (
+        <div className="space-y-5">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                {tool === 'text' || tool === 'step' ? 'Color' : 'Stroke Color'}
+              </label>
+              <div 
+                className="w-3 h-3 rounded-full shadow-inner border border-border/50" 
+                style={{ backgroundColor: hexToRgba(settings.color, settings.strokeOpacity) }} 
               />
             </div>
+            <ColorGrid selected={settings.color} onSelect={(color) => onUpdate(tool, { color })} />
+          </div>
 
-            <div className="space-y-3 pt-1">
-              <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Stroke Style</label>
-              <div className="flex gap-2">
-                {STROKE_STYLES.map((style) => (
-                  <Button
-                    key={style.label}
-                    variant={settings.strokeStyle === style.value ? "default" : "outline"}
-                    size="sm"
-                    className="flex-1 h-8 text-[10px] uppercase font-bold tracking-tight"
-                    onClick={() => onUpdate(tool, { strokeStyle: style.value as any })}
-                  >
-                    {style.label}
-                  </Button>
-                ))}
-              </div>
+          <div className="space-y-3 pt-1">
+            <div className="flex justify-between items-center">
+              <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                {tool === 'text' || tool === 'step' ? 'Opacity' : 'Stroke Opacity'}
+              </label>
+              <span className="text-[10px] font-mono font-medium">{Math.round(settings.strokeOpacity * 100)}%</span>
             </div>
-          </>
-        )}
-      </div>
+            <Slider 
+              value={[settings.strokeOpacity * 100]} 
+              max={100} 
+              min={0}
+              step={1} 
+              onValueChange={(v) => onUpdate(tool, { strokeOpacity: v[0] / 100 })} 
+            />
+          </div>
+
+          {isShape && (
+            <>
+              <div className="space-y-3 pt-1">
+                <div className="flex justify-between items-center">
+                  <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Stroke Width</label>
+                  <span className="text-[10px] font-mono font-medium">{settings.strokeWidth}px</span>
+                </div>
+                <Slider 
+                  value={[settings.strokeWidth]} 
+                  min={1}
+                  max={30} 
+                  step={1} 
+                  onValueChange={(v) => onUpdate(tool, { strokeWidth: v[0] })} 
+                />
+              </div>
+
+              <div className="space-y-3 pt-1">
+                <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Stroke Style</label>
+                <div className="flex gap-2">
+                  {STROKE_STYLES.map((style) => (
+                    <Button
+                      key={style.label}
+                      variant={settings.strokeStyle === style.value ? "default" : "outline"}
+                      size="sm"
+                      className="flex-1 h-8 text-[10px] uppercase font-bold tracking-tight"
+                      onClick={() => onUpdate(tool, { strokeStyle: style.value as any })}
+                    >
+                      {style.label}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+      )}
       
       {/* Fill Color Section (Rectangle only for now) */}
       {tool === 'rectangle' && (
@@ -321,6 +333,58 @@ const ToolSettingsPanel = ({
           </div>
         </div>
       )}
+      {/* Layer Management Section */}
+      {layerActions && (
+        <div className="space-y-4 border-t border-border/50 pt-5">
+          <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Layers</label>
+          <div className="grid grid-cols-4 gap-2">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="outline" size="icon" className="h-10 w-full" onClick={layerActions.sendToBack}>
+                    <SendToBack className="w-4 h-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Send to Back (Ctrl+Shift+Down)</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="outline" size="icon" className="h-10 w-full" onClick={layerActions.sendBackward}>
+                    <ChevronDown className="w-4 h-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Send Backward (Ctrl+Down)</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="outline" size="icon" className="h-10 w-full" onClick={layerActions.bringForward}>
+                    <ChevronUp className="w-4 h-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Bring Forward (Ctrl+Up)</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="outline" size="icon" className="h-10 w-full" onClick={layerActions.bringToFront}>
+                    <BringToFront className="w-4 h-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Bring to Front (Ctrl+Shift+Up)</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };
@@ -337,7 +401,8 @@ const ToolbarButton = ({
   isOpen,
   onOpenChange,
   stepCount,
-  onUpdateStepCount
+  onUpdateStepCount,
+  layerActions
 }: { 
   icon: any, 
   label: string, 
@@ -350,7 +415,13 @@ const ToolbarButton = ({
   isOpen?: boolean,
   onOpenChange?: (open: boolean) => void,
   stepCount?: number,
-  onUpdateStepCount?: (count: number) => void
+  onUpdateStepCount?: (count: number) => void,
+  layerActions?: {
+    bringToFront: () => void;
+    sendToBack: () => void;
+    bringForward: () => void;
+    sendBackward: () => void;
+  }
 }) => {
   return (
     <Popover open={isOpen} onOpenChange={onOpenChange}>
@@ -391,7 +462,7 @@ const ToolbarButton = ({
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>
-      {settings && toolType && onUpdateSettings && (
+      {(settings || layerActions) && toolType && (onUpdateSettings || layerActions) && (
         <PopoverContent 
           side="right" 
           align="start" 
@@ -400,10 +471,11 @@ const ToolbarButton = ({
         >
           <ToolSettingsPanel 
             tool={toolType} 
-            settings={settings} 
-            onUpdate={onUpdateSettings}
+            settings={settings!} 
+            onUpdate={onUpdateSettings || (() => {})}
             stepCount={stepCount}
             onUpdateStepCount={onUpdateStepCount}
+            layerActions={layerActions}
           />
         </PopoverContent>
       )}
@@ -432,7 +504,12 @@ function App() {
     zoomOut,
     resetZoom,
     stepCount,
-    setStepCount
+    setStepCount,
+    bringToFront,
+    sendToBack,
+    bringForward,
+    sendBackward,
+    hasSelection
   } = useFabric();
   
   const [theme, setTheme] = React.useState<'light' | 'dark' | 'system'>(
@@ -445,10 +522,12 @@ function App() {
   React.useEffect(() => {
     if (activeTool !== 'select') {
       setOpenSettingsTool(activeTool);
+    } else if (hasSelection) {
+      setOpenSettingsTool('select');
     } else {
       setOpenSettingsTool(null);
     }
-  }, [activeTool]);
+  }, [activeTool, hasSelection]);
 
   React.useEffect(() => {
     const root = window.document.documentElement;
@@ -523,6 +602,12 @@ function App() {
               deselectAll();
               setActiveTool('select');
             }} 
+            toolType="select"
+            settings={toolSettings.select}
+            onUpdateSettings={updateToolSetting}
+            isOpen={openSettingsTool === 'select'}
+            onOpenChange={(open) => setOpenSettingsTool(open ? 'select' : null)}
+            layerActions={{ bringToFront, sendToBack, bringForward, sendBackward }}
           />
           <ToolbarButton 
             icon={Square} 
@@ -537,6 +622,7 @@ function App() {
             onUpdateSettings={updateToolSetting}
             isOpen={openSettingsTool === 'rectangle'}
             onOpenChange={(open) => setOpenSettingsTool(open ? 'rectangle' : null)}
+            layerActions={{ bringToFront, sendToBack, bringForward, sendBackward }}
           />
           <ToolbarButton 
             icon={ArrowUpRight} 
@@ -551,6 +637,7 @@ function App() {
             onUpdateSettings={updateToolSetting}
             isOpen={openSettingsTool === 'arrow'}
             onOpenChange={(open) => setOpenSettingsTool(open ? 'arrow' : null)}
+            layerActions={{ bringToFront, sendToBack, bringForward, sendBackward }}
           />
           <ToolbarButton 
             icon={Type} 
@@ -565,6 +652,7 @@ function App() {
             onUpdateSettings={updateToolSetting}
             isOpen={openSettingsTool === 'text'}
             onOpenChange={(open) => setOpenSettingsTool(open ? 'text' : null)}
+            layerActions={{ bringToFront, sendToBack, bringForward, sendBackward }}
           />
           <ToolbarButton 
             icon={Hash} 
@@ -581,6 +669,7 @@ function App() {
             onOpenChange={(open) => setOpenSettingsTool(open ? 'step' : null)}
             stepCount={stepCount}
             onUpdateStepCount={setStepCount}
+            layerActions={{ bringToFront, sendToBack, bringForward, sendBackward }}
           />
           <ToolbarButton 
             icon={Pencil} 
@@ -595,6 +684,7 @@ function App() {
             onUpdateSettings={updateToolSetting}
             isOpen={openSettingsTool === 'pen'}
             onOpenChange={(open) => setOpenSettingsTool(open ? 'pen' : null)}
+            layerActions={{ bringToFront, sendToBack, bringForward, sendBackward }}
           />
         </div>
 
